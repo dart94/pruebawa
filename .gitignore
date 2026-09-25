@@ -1,0 +1,16 @@
+# Secretos y configuracion local
+.env
+.env.*
+!.env.example
+
+# Logs y sistema
+*.log
+node_modules/
+.DS_Store
+
+# Herramientas locales
+.claude/
+
+prompt.md
+
+

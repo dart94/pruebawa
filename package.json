@@ -1,0 +1,13 @@
+{
+  "name": "toyloco-whatsapp-bot",
+  "version": "0.1.0",
+  "description": "Webhook y bot de WhatsApp Cloud API para ToyLoco",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
