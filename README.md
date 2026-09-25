@@ -2,6 +2,7 @@
 
 Servidor sin dependencias. Solo necesita Node 18 o superior.
 Contexto y errores conocidos de Meta: `GUIA-WHATSAPP.md`.
+Arquitectura, reglas de negocio, decisiones, auditoría y roadmap: carpeta `docs/`.
 
 ## 1. Configurar
 
@@ -79,4 +80,8 @@ El mismo cliente, tipo y producto no vuelve a avisar en 10 minutos.
 
 ## 8. Conversacion
 
-Estan en `bot.js` (flujo) y `mensajes.js` (botones, listas y limites de Meta). Los textos son provisionales.
+El flujo esta en `bot.js` y `mensajes.js` (botones, listas y limites de Meta). Los textos, las etiquetas de
+categoria, la moneda y el nombre del negocio estan en **`negocio.json`**: para cambiar un mensaje se edita ese
+archivo y se hace deploy, sin tocar codigo. El archivo se valida al arrancar (textos faltantes, variables
+`{x}` no permitidas y titulos que exceden los limites de WhatsApp); si tiene un error el servidor no arranca.
+`npm test` tambien lo valida. Para otro negocio: `NEGOCIO_ARCHIVO=otro.json`.

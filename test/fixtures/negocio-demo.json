@@ -1,0 +1,58 @@
+{
+  "nombre": "Negocio Demo",
+  "moneda": "USD",
+  "categorias": {
+    "figura": "Figuras",
+    "tcg": "Sobres Pokémon TCG",
+    "accesorio": "Accesorios"
+  },
+  "quitar_sufijos": [],
+  "stock": {
+    "uno": "pieza única",
+    "varios": "{n} piezas",
+    "por_categoria": {
+      "tcg": "quedan {n}"
+    }
+  },
+  "botones": {
+    "buscar": "Ver catálogo",
+    "buscar_otro": "Buscar otro",
+    "persona": "Hablar con alguien",
+    "menu": "Volver al menú",
+    "me_interesa": "Me interesa"
+  },
+  "listas": {
+    "boton_categorias": "Ver categorías",
+    "seccion_categorias": "Categorías",
+    "boton_productos": "Ver productos",
+    "seccion_productos": "Productos",
+    "disponible_uno": "{n} disponible",
+    "disponible_varios": "{n} disponibles",
+    "escribir_titulo": "Escribir un nombre",
+    "escribir_descripcion": "Ej. Gogeta o Naruto",
+    "afinar_descripcion": "Para acotar la búsqueda"
+  },
+  "textos": {
+    "saludo": "Buenas, bienvenido a {nombre}. ¿Qué necesitas?",
+    "pie_menu": "Asistente automático",
+    "pie_confirmacion": "Precio y stock sujetos a confirmación.",
+    "pregunta_categoria": "¡Va! ¿De qué categoría? 👇",
+    "categoria_encontrados": "Tengo {n} en {categoria} 🙌 Toca «Ver productos» y elige uno.",
+    "busqueda_encontrados": "Encontré {n} 🙌 Toca «Ver productos» y elige uno.",
+    "parecidos": "No encontré justo eso, pero mira lo más parecido 👀",
+    "sin_resultados": "No encontré \"{consulta}\" ahorita 😕 Prueba con otro nombre o pregunta directo al equipo.",
+    "ficha_pie": "Sujeto a confirmación antes de apartarlo.",
+    "interes": "¡Anotado! 🙌 Quedó registrado tu interés en *{producto}*.",
+    "persona": "Listo, dejé tu solicitud para el equipo de {nombre} 🙌",
+    "escribir": "Dime qué buscas ✍️ Por ejemplo: Gogeta, figuras de Naruto o sobres de Pokémon.",
+    "sin_catalogo": "Uy, ahorita no puedo consultar el inventario 😅 Puedes dejar tu solicitud al equipo.",
+    "categoria_vacia": "Esa categoría ya no tiene productos disponibles 😕 ¿Buscamos otra cosa?",
+    "producto_no_disponible": "Ese ya no está disponible 😕 ¿Buscamos otro?",
+    "no_es_texto": "Recibí tu mensaje, pero no puedo ver imágenes ni audios 😅 Cuéntame en texto qué buscas o toca una opción.",
+    "dato_pendiente": "Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo."
+  },
+  "aviso_tipos": {
+    "persona": "Hablar con alguien",
+    "interes": "Me interesa"
+  }
+}
