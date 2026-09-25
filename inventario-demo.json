@@ -1,0 +1,10 @@
+{
+  "_nota": "Datos FICTICIOS para desarrollo y demos. No representan el inventario real de ningun negocio.",
+  "productos": [
+    { "id": "D01", "categoria": "Figura", "producto": "Figura Ninja Naranja", "tema": "Anime Demo A", "linea": "Linea Demo", "precio": 450, "cantidad": 1, "estado": "Disponible" },
+    { "id": "D02", "categoria": "Figura", "producto": "Figura Heroe Azul", "tema": "Anime Demo A", "linea": "Linea Demo", "precio": 550, "cantidad": 2, "estado": "Disponible" },
+    { "id": "D03", "categoria": "Figura", "producto": "Figura Pirata Sombrero", "tema": "Anime Demo B", "linea": "Coleccion Demo", "precio": 299, "cantidad": 1, "estado": "Disponible" },
+    { "id": "D04", "categoria": "TCG", "producto": "Set Demo Uno (sobre)", "tema": "TCG Demo", "linea": "", "precio": 100, "cantidad": 12, "estado": "Disponible" },
+    { "id": "D05", "categoria": "TCG", "producto": "Set Demo Dos (sobre)", "tema": "TCG Demo", "linea": "", "precio": 120, "cantidad": 6, "estado": "Disponible" }
+  ]
+}

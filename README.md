@@ -47,7 +47,19 @@ developers.facebook.com > app Responder > WhatsApp > Configuracion > Webhooks:
 - Token de verificacion: el mismo `VERIFY_TOKEN`
 - Verificar y guardar, y suscribirse al campo `messages`
 
-## 6. Respuestas del bot
+## 6. Catalogo
 
-Estan en `responderA()` de `server.js`. Son provisionales: el bot todavia no consulta
-catalogo, precios ni inventario, y "hablar con una persona" aun no notifica a nadie.
+El bot consulta `catalogo.js`, que lee la pestana `BOT` de la hoja de inventario publicada como CSV
+(`CATALOGO_URL`). Formato fijo de columnas: `id, categoria, producto, tema, linea, precio, cantidad, estado`.
+Solo se ofrecen productos `Disponible` con cantidad y precio validos. Nunca publiques la hoja completa:
+solo la pestana `BOT` (la hoja completa tiene costos y datos de clientes).
+
+Sin `CATALOGO_URL`, en desarrollo se usa `inventario-demo.json` (datos ficticios).
+En produccion no hay respaldo con datos de demo: si la hoja falla, se usa la ultima copia en memoria,
+y si no la hay, el bot avisa que no puede consultar el inventario.
+
+    npm test
+
+## 7. Respuestas del bot
+
+Estan en `responderA()` de `server.js`. Son provisionales: "hablar con una persona" aun no notifica a nadie.

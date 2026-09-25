@@ -5,6 +5,7 @@ const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { obtenerCatalogo, buscar, listar } = require('./catalogo');
 
 // ---------- Configuracion ----------
 
@@ -91,7 +92,28 @@ function fijarEstado(numero, estado) {
   if (estados.size > 5000) estados.delete(estados.keys().next().value);
 }
 
-function responderA(texto, numero) {
+const AVISO_CONFIRMACION = 'Precio y disponibilidad sujetos a confirmacion: una persona del equipo de ToyLoco te respondera por este chat.';
+const SEGUIR = 'Puedes buscar otro producto, escribir 3 para hablar con una persona, o "menu".';
+
+async function responderBusqueda(texto, numero) {
+  const consulta = (texto || '').trim().slice(0, 200);
+  const productos = await obtenerCatalogo();
+  if (!productos) {
+    console.log(`[consulta] ${enmascarar(numero)} catalogo no disponible`);
+    return 'Ahora no puedo consultar el inventario. Escribe 3 y una persona del equipo te ayuda por este chat.';
+  }
+  const { exactos, parecidos } = buscar(productos, consulta);
+  console.log(`[consulta] ${enmascarar(numero)} resultados: ${exactos.length} exactos, ${parecidos.length} parecidos${LOG_CONTENIDO ? ' para: ' + consulta : ''}`);
+  if (exactos.length) {
+    return `Esto encontre:\n${listar(exactos)}\n\n${AVISO_CONFIRMACION}\n\n${SEGUIR}`;
+  }
+  if (parecidos.length) {
+    return `No encontre exactamente eso, pero hay algo parecido:\n${listar(parecidos)}\n\n${AVISO_CONFIRMACION}\n\n${SEGUIR}`;
+  }
+  return `No encontre "${consulta}" en el inventario disponible. Prueba con otro nombre, o escribe 3 y una persona del equipo te ayuda.`;
+}
+
+async function responderA(texto, numero) {
   const t = normalizar(texto);
 
   if (/^(hola+|buenas|buenos dias|buenas tardes|buenas noches|info|informacion|menu)\b/.test(t)) {
@@ -99,16 +121,16 @@ function responderA(texto, numero) {
     return MENU;
   }
   if (t !== '1' && estadoDe(numero) === 'esperando_producto') {
-    estados.delete(numero);
-    if (t === '2' || t === '3') return responderA(t, numero);
-    const consulta = (texto || '').trim().slice(0, 200);
-    console.log(`[consulta] ${enmascarar(numero)} pregunto por un producto${LOG_CONTENIDO ? ': ' + consulta : ''}`);
-    return `Recibido: "${consulta}".\n\nUna persona del equipo de ToyLoco revisara disponibilidad y precio, y te respondera por este chat.`;
+    if (t === '2' || t === '3') {
+      estados.delete(numero);
+      return responderA(t, numero);
+    }
+    fijarEstado(numero, 'esperando_producto');   // sigue en modo busqueda hasta que escriba "menu", 2 o 3
+    return responderBusqueda(texto, numero);
   }
   if (t === '1') {
     fijarEstado(numero, 'esperando_producto');
-    return 'Escribe el nombre del producto que buscas (por ejemplo: figura de Naruto, o sobres de Pokemon TCG).\n\n' +
-           'Este asistente no muestra precios ni inventario: una persona del equipo revisara tu mensaje y te respondera por este chat.';
+    return 'Escribe el nombre o tipo de producto que buscas (por ejemplo: Gogeta, figuras de Naruto, sobres de Pokemon TCG) y te muestro precio y disponibilidad.';
   }
   if (t === '2') {
     return 'Todavia no tengo el horario ni la ubicacion cargados en este asistente.\n\n' +
@@ -242,7 +264,7 @@ const servidor = http.createServer((req, res) => {
                 console.log(`[entrante] ${enmascarar(de)} tipo ${mensaje.type}${detalle}`);
                 await marcarLeido(mensaje.id);
                 if (mensaje.type === 'text') {
-                  await enviarTexto(de, responderA(mensaje.text.body, de));
+                  await enviarTexto(de, await responderA(mensaje.text.body, de));
                 } else {
                   await enviarTexto(de, 'Este asistente automatico solo entiende mensajes de texto. Escribe "menu" para ver las opciones.');
                 }
