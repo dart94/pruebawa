@@ -5,7 +5,8 @@ const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { obtenerCatalogo, buscar, listar } = require('./catalogo');
+const { responder } = require('./bot');
+const { texto, payload, textoPlano } = require('./mensajes');
 
 // ---------- Configuracion ----------
 
@@ -63,114 +64,38 @@ function yaProcesado(id) {
   return false;
 }
 
-// ---------- Logica del bot ----------
-// Aqui defines que contesta. Recibe el texto del cliente y regresa la respuesta.
-
-const MENU =
-  'Hola, gracias por escribir a ToyLoco.\n\n' +
-  'Este es un asistente automatico. Responde con un numero:\n' +
-  '1. Buscar un producto (figuras, accesorios, TCG)\n' +
-  '2. Horario y ubicacion\n' +
-  '3. Hablar con una persona';
-
-function normalizar(texto) {
-  return (texto || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-}
-
-// Estado de conversacion por cliente, en memoria (se pierde al reiniciar; expira solo).
-const ESTADO_TTL = 30 * 60 * 1000;
-const estados = new Map();   // numero -> { estado, hasta }
-
-function estadoDe(numero) {
-  const e = estados.get(numero);
-  if (!e) return null;
-  if (e.hasta < Date.now()) { estados.delete(numero); return null; }
-  return e.estado;
-}
-function fijarEstado(numero, estado) {
-  estados.set(numero, { estado, hasta: Date.now() + ESTADO_TTL });
-  if (estados.size > 5000) estados.delete(estados.keys().next().value);
-}
-
-const AVISO_CONFIRMACION = 'Precio y disponibilidad sujetos a confirmacion: una persona del equipo de ToyLoco te respondera por este chat.';
-const SEGUIR = 'Puedes buscar otro producto, escribir 3 para hablar con una persona, o "menu".';
-
-async function responderBusqueda(texto, numero) {
-  const consulta = (texto || '').trim().slice(0, 200);
-  const productos = await obtenerCatalogo();
-  if (!productos) {
-    console.log(`[consulta] ${enmascarar(numero)} catalogo no disponible`);
-    return 'Ahora no puedo consultar el inventario. Escribe 3 y una persona del equipo te ayuda por este chat.';
-  }
-  const { exactos, parecidos } = buscar(productos, consulta);
-  console.log(`[consulta] ${enmascarar(numero)} resultados: ${exactos.length} exactos, ${parecidos.length} parecidos${LOG_CONTENIDO ? ' para: ' + consulta : ''}`);
-  if (exactos.length) {
-    return `Esto encontre:\n${listar(exactos)}\n\n${AVISO_CONFIRMACION}\n\n${SEGUIR}`;
-  }
-  if (parecidos.length) {
-    return `No encontre exactamente eso, pero hay algo parecido:\n${listar(parecidos)}\n\n${AVISO_CONFIRMACION}\n\n${SEGUIR}`;
-  }
-  return `No encontre "${consulta}" en el inventario disponible. Prueba con otro nombre, o escribe 3 y una persona del equipo te ayuda.`;
-}
-
-async function responderA(texto, numero) {
-  const t = normalizar(texto);
-
-  if (/^(hola+|buenas|buenos dias|buenas tardes|buenas noches|info|informacion|menu)\b/.test(t)) {
-    estados.delete(numero);
-    return MENU;
-  }
-  if (t !== '1' && estadoDe(numero) === 'esperando_producto') {
-    if (t === '2' || t === '3') {
-      estados.delete(numero);
-      return responderA(t, numero);
-    }
-    fijarEstado(numero, 'esperando_producto');   // sigue en modo busqueda hasta que escriba "menu", 2 o 3
-    return responderBusqueda(texto, numero);
-  }
-  if (t === '1') {
-    fijarEstado(numero, 'esperando_producto');
-    return 'Escribe el nombre o tipo de producto que buscas (por ejemplo: Gogeta, figuras de Naruto, sobres de Pokemon TCG) y te muestro precio y disponibilidad.';
-  }
-  if (t === '2') {
-    return 'Todavia no tengo el horario ni la ubicacion cargados en este asistente.\n\n' +
-           'Escribe 3 y una persona del equipo te los confirma por este chat.';
-  }
-  if (t === '3') {
-    return 'Recibido. Una persona del equipo de ToyLoco te respondera por este chat en cuanto pueda.';
-  }
-  return 'Este asistente automatico solo entiende las opciones del menu. Escribe "menu" para verlas, o "3" para hablar con una persona.';
-}
-
 // ---------- Envio a la API ----------
 
-async function enviarTexto(para, texto) {
+async function llamarMensajes(cuerpo) {
+  return fetch(`${API}/${PHONE_ID}/messages`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${TOKEN}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(cuerpo)
+  });
+}
+
+// Envia un mensaje (texto, botones o lista). Si Meta rechaza uno interactivo, reintenta como texto plano.
+async function enviar(para, msg) {
   if (DRY_RUN) {
-    console.log(`[dry-run] no se envia a ${enmascarar(para)}${LOG_CONTENIDO ? ': ' + texto.replace(/\n/g, ' | ') : ''}`);
+    console.log(`[dry-run] ${msg.tipo} para ${enmascarar(para)}${LOG_CONTENIDO ? ':\n' + JSON.stringify(payload(para, msg).interactive || payload(para, msg).text, null, 1) : ''}`);
     return;
   }
   if (!TOKEN || !PHONE_ID) {
     console.log('[aviso] Falta WHATSAPP_TOKEN o PHONE_NUMBER_ID en .env, no se envia nada.');
     return;
   }
-  const res = await fetch(`${API}/${PHONE_ID}/messages`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${TOKEN}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      messaging_product: 'whatsapp',
-      to: para,
-      type: 'text',
-      text: { body: texto }
-    })
-  });
-  const cuerpo = await res.text();
+  const res = await llamarMensajes(payload(para, msg));
   if (res.ok) {
-    console.log(`[envio] ${res.status} a ${enmascarar(para)}`);
-  } else {
-    console.log(`[envio-error] ${res.status} ${cuerpo}`);   // el error de Meta no incluye datos del cliente
+    console.log(`[envio] ${res.status} ${msg.tipo} a ${enmascarar(para)}`);
+    return;
+  }
+  console.log(`[envio-error] ${res.status} ${await res.text()}`);   // el error de Meta no incluye datos del cliente
+  if (msg.tipo !== 'texto') {
+    const respaldo = await llamarMensajes(payload(para, texto(textoPlano(msg))));
+    console.log(`[envio-respaldo] ${respaldo.status} texto plano a ${enmascarar(para)}`);
   }
 }
 
@@ -184,6 +109,16 @@ async function marcarLeido(idMensaje) {
     },
     body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: idMensaje })
   }).catch(() => {});
+}
+
+// Convierte un mensaje entrante de Meta en la entrada que entiende el bot
+function entradaDe(mensaje) {
+  if (mensaje.type === 'text') return { tipo: 'texto', texto: mensaje.text.body };
+  if (mensaje.type === 'interactive') {
+    const r = mensaje.interactive.button_reply || mensaje.interactive.list_reply;
+    if (r) return { tipo: 'seleccion', id: r.id };
+  }
+  return { tipo: 'otro' };
 }
 
 // ---------- Firma de Meta ----------
@@ -263,11 +198,7 @@ const servidor = http.createServer((req, res) => {
                 const detalle = LOG_CONTENIDO && mensaje.type === 'text' ? `: ${mensaje.text.body}` : '';
                 console.log(`[entrante] ${enmascarar(de)} tipo ${mensaje.type}${detalle}`);
                 await marcarLeido(mensaje.id);
-                if (mensaje.type === 'text') {
-                  await enviarTexto(de, await responderA(mensaje.text.body, de));
-                } else {
-                  await enviarTexto(de, 'Este asistente automatico solo entiende mensajes de texto. Escribe "menu" para ver las opciones.');
-                }
+                await enviar(de, await responder(entradaDe(mensaje)));
               } catch (e) {
                 console.log(`[error] mensaje ${mensaje.id}: ${e.message}`);
               }

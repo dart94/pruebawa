@@ -1,7 +1,9 @@
 // Simula un mensaje entrante de Meta contra el webhook local.
-// Uso: node prueba-local.js "hola"
+// Uso: node prueba-local.js "hola"          (mensaje de texto)
+//      node prueba-local.js --id buscar     (clic en un boton o fila de lista)
 
-const texto  = process.argv[2] || 'hola';
+const porId  = process.argv[2] === '--id';
+const texto  = porId ? process.argv[3] : (process.argv[2] || 'hola');
 const puerto = process.env.PORT || 3000;
 
 const cuerpo = {
@@ -18,8 +20,9 @@ const cuerpo = {
           from: '526623254234',
           id: 'wamid.prueba.' + Date.now(),
           timestamp: '0',
-          type: 'text',
-          text: { body: texto }
+          ...(porId
+            ? { type: 'interactive', interactive: { type: 'list_reply', list_reply: { id: texto, title: texto } } }
+            : { type: 'text', text: { body: texto } })
         }]
       }
     }]
