@@ -5,7 +5,8 @@ const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
-const { responder } = require('./bot');
+const { responder, alAvisar } = require('./bot');
+const { avisarDueno } = require('./notificar');
 const { texto, payload, textoPlano } = require('./mensajes');
 
 // ---------- Configuracion ----------
@@ -99,6 +100,19 @@ async function enviar(para, msg) {
   }
 }
 
+// Envia un payload ya armado (plantilla de aviso al dueno). Devuelve true si Meta lo acepto.
+async function enviarPayload(cuerpo) {
+  if (DRY_RUN) {
+    console.log(`[dry-run] aviso al dueno (${enmascarar(cuerpo.to)}) plantilla ${cuerpo.template.name}${LOG_CONTENIDO ? ': ' + JSON.stringify(cuerpo.template.components[0].parameters.map((x) => x.text)) : ''}`);
+    return true;
+  }
+  if (!TOKEN || !PHONE_ID) return false;
+  const res = await llamarMensajes(cuerpo);
+  console.log(res.ok ? `[aviso-dueno] ${res.status} enviado` : `[aviso-dueno-error] ${res.status} ${await res.text()}`);
+  return res.ok;
+}
+alAvisar((evento) => avisarDueno(evento, enviarPayload));
+
 async function marcarLeido(idMensaje) {
   if (DRY_RUN || !TOKEN || !PHONE_ID) return;
   await fetch(`${API}/${PHONE_ID}/messages`, {
@@ -113,12 +127,12 @@ async function marcarLeido(idMensaje) {
 
 // Convierte un mensaje entrante de Meta en la entrada que entiende el bot
 function entradaDe(mensaje) {
-  if (mensaje.type === 'text') return { tipo: 'texto', texto: mensaje.text.body };
+  if (mensaje.type === 'text') return { tipo: 'texto', texto: mensaje.text.body, de: mensaje.from };
   if (mensaje.type === 'interactive') {
     const r = mensaje.interactive.button_reply || mensaje.interactive.list_reply;
-    if (r) return { tipo: 'seleccion', id: r.id };
+    if (r) return { tipo: 'seleccion', id: r.id, de: mensaje.from };
   }
-  return { tipo: 'otro' };
+  return { tipo: 'otro', de: mensaje.from };
 }
 
 // ---------- Firma de Meta ----------

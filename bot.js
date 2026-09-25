@@ -6,6 +6,13 @@ const { obtenerCatalogo, buscar, normalizar } = require('./catalogo');
 const { texto, botones, lista } = require('./mensajes');
 
 const NEGOCIO = process.env.NEGOCIO_NOMBRE || 'ToyLoco';
+
+// server.js registra aqui como avisar al dueno; por defecto no hace nada.
+let avisar = async () => {};
+function alAvisar(fn) { avisar = fn; }
+function aviso(evento) {   // sin await: el aviso no retrasa ni rompe la respuesta al cliente
+  Promise.resolve().then(() => avisar(evento)).catch((e) => console.log(`[aviso-error] ${e.message}`));
+}
 const PIE_CONFIRMACION = 'Precio y stock sujetos a confirmación.';
 
 // Etiquetas de categoria (clave = categoria del catalogo, sin acentos ni mayusculas)
@@ -117,6 +124,7 @@ async function responder(entrada) {
     if (id === 'menu') return menu();
     if (id === 'persona') {
       console.log('[persona] el cliente pidio hablar con alguien');
+      aviso({ tipo: 'persona', cliente: entrada.de });
       return botones(`Listo, dejé tu solicitud para el equipo de ${NEGOCIO} 🙌`, [BTN.menu]);
     }
     if (id === 'escribir') return texto('Dime qué buscas ✍️ Por ejemplo: Gogeta, figuras de Naruto o sobres de Pokémon.');
@@ -137,6 +145,7 @@ async function responder(entrada) {
       if (!p) return botones('Ese ya no está disponible 😕 ¿Buscamos otro?', [BTN.buscarOtro, BTN.persona]);
       if (id.startsWith('interes:')) {
         console.log(`[interes] producto ${p.id}`);
+        aviso({ tipo: 'interes', producto: nombreLimpio(p), cliente: entrada.de });
         return botones(`¡Anotado! 🙌 Quedó registrado tu interés en *${nombreLimpio(p)}*.`, [BTN.menu]);
       }
       return detalle(p);
@@ -147,8 +156,8 @@ async function responder(entrada) {
   // Texto libre
   const t = normalizar(entrada.texto);
   if (SALUDO.test(t)) return menu();
-  if (t === '1') return responder({ tipo: 'seleccion', id: 'buscar' });
-  if (t === '2') return responder({ tipo: 'seleccion', id: 'persona' });
+  if (t === '1') return responder({ ...entrada, tipo: 'seleccion', id: 'buscar' });
+  if (t === '2') return responder({ ...entrada, tipo: 'seleccion', id: 'persona' });
   if (DATOS_PENDIENTES.test(t)) {
     return botones('Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo.', [BTN.persona, BTN.buscar]);
   }
@@ -157,4 +166,4 @@ async function responder(entrada) {
   return resultadosDeBusqueda(entrada.texto, productos);   // cualquier otro texto se toma como busqueda
 }
 
-module.exports = { responder, nombreLimpio };
+module.exports = { responder, nombreLimpio, alAvisar };

@@ -60,6 +60,23 @@ y si no la hay, el bot avisa que no puede consultar el inventario.
 
     npm test
 
-## 7. Respuestas del bot
+## 7. Aviso al dueno
 
-Estan en `responderA()` de `server.js`. Son provisionales: "hablar con una persona" aun no notifica a nadie.
+Cuando un cliente toca "Me interesa" o "Hablar con alguien", `notificar.js` envia una plantilla de WhatsApp
+al numero `DUENO_WHATSAPP` con el tipo de aviso, el producto y el numero del cliente. Se usa plantilla
+(y no texto libre) para que llegue aunque el dueno no haya escrito al bot en las ultimas 24 h.
+
+La plantilla se crea en WhatsApp Manager (categoria Utilidad, idioma es_MX, nombre `aviso_cliente`):
+
+    Nuevo aviso de ToyLoco 🔔
+    Tipo: {{1}}
+    Producto: {{2}}
+    Cliente: {{3}}
+    Escríbele a ese número desde tu WhatsApp para atenderlo.
+
+Hasta que Meta la apruebe, el envio falla y queda `[aviso-dueno-error]` en el log; el cliente no lo nota.
+El mismo cliente, tipo y producto no vuelve a avisar en 10 minutos.
+
+## 8. Conversacion
+
+Estan en `bot.js` (flujo) y `mensajes.js` (botones, listas y limites de Meta). Los textos son provisionales.

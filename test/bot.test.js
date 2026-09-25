@@ -144,3 +144,28 @@ test('mas de 10 resultados: 9 productos + fila para afinar', async () => {
   assert.strictEqual(m.filas[9].id, 'escribir');
   validarLimites(m);
 });
+
+test('me interesa y hablar con alguien avisan al dueno con cliente y producto', async () => {
+  const { alAvisar } = require('../bot');
+  const eventos = [];
+  alAvisar(async (e) => { eventos.push(e); });
+  await responder({ tipo: 'seleccion', id: 'interes:D02', de: '5216620000001' });
+  await responder({ tipo: 'seleccion', id: 'persona', de: '5216620000002' });
+  await responder({ tipo: 'texto', texto: '2', de: '5216620000003' });
+  await new Promise((r) => setImmediate(r));
+  assert.deepStrictEqual(eventos, [
+    { tipo: 'interes', producto: 'Figura Heroe Azul', cliente: '5216620000001' },
+    { tipo: 'persona', cliente: '5216620000002' },
+    { tipo: 'persona', cliente: '5216620000003' }
+  ]);
+  alAvisar(async () => {});
+});
+
+test('si el aviso falla, el cliente igual recibe su respuesta', async () => {
+  const { alAvisar } = require('../bot');
+  alAvisar(async () => { throw new Error('boom'); });
+  const m = await responder({ tipo: 'seleccion', id: 'persona', de: '1' });
+  assert.match(m.cuerpo, /Listo/);
+  await new Promise((r) => setImmediate(r));
+  alAvisar(async () => {});
+});
