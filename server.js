@@ -199,7 +199,9 @@ const servidor = http.createServer((req, res) => {
             const valor = cambio.value || {};
 
             for (const estado of valor.statuses || []) {
-              console.log(`[estado] ${estado.id} -> ${estado.status}`);
+              // Si Meta reporta un fallo de entrega, el motivo viene en estado.errors (sin datos del cliente)
+              const motivo = (estado.errors || []).map((e) => `${e.code} ${e.title || ''}${e.error_data && e.error_data.details ? ': ' + e.error_data.details : ''}`).join(' | ');
+              console.log(`[estado] ${estado.id} -> ${estado.status}${motivo ? ' MOTIVO ' + motivo : ''}`);
             }
 
             for (const mensaje of valor.messages || []) {
