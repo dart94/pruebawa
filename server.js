@@ -10,7 +10,7 @@ const { verificarCatalogo } = require('./catalogo');
 const { estadoSalud } = require('./salud');
 const { avisarDueno } = require('./notificar');
 const { texto, payload, textoPlano } = require('./mensajes');
-const { mensajeIG, mensajeIGPlano, eventosDeWebhook } = require('./instagram');
+const { mensajeIG, mensajeIGPlano, eventosDeWebhook, resumenWebhook } = require('./instagram');
 const { paginaPrivacidad } = require('./privacidad');
 const { negocio } = require('./negocio');
 
@@ -280,6 +280,10 @@ const servidor = http.createServer((req, res) => {
 
       try {
         const datos = JSON.parse(crudo.toString('utf8'));
+        if (datos && datos.object === 'instagram') {
+          const eventosIG = eventosDeWebhook(datos);
+          console.log(`[webhook-ig] recibido: ${resumenWebhook(datos)} -> ${eventosIG.length} evento(s) reconocido(s)`);
+        }
 
         for (const ev of eventosDeWebhook(datos)) {
           if (yaProcesado(ev.id)) {

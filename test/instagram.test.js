@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { texto, botones, lista } = require('../mensajes');
-const { mensajeIG, mensajeIGPlano, eventosDeWebhook } = require('../instagram');
+const { mensajeIG, mensajeIGPlano, eventosDeWebhook, resumenWebhook } = require('../instagram');
 
 const webhook = (messaging) => ({ object: 'instagram', entry: [{ id: '1784', time: 0, messaging }] });
 
@@ -68,6 +68,33 @@ test('webhook: los ecos (enviados desde la cuenta) se marcan y no traen entrada'
   assert.strictEqual(ev[0].eco, true);
   assert.strictEqual(ev[0].entrada, null);
   assert.strictEqual(ev[0].de, 'C1');   // el cliente es el destinatario
+});
+
+test('webhook: tambien se leen mensajes que vienen en changes[] con field messages', () => {
+  const datos = { object: 'instagram', entry: [{ id: '1784', time: 0, changes: [
+    { field: 'messages', value: { sender: { id: 'C1' }, recipient: { id: 'N1' }, timestamp: 0, message: { mid: 'm9', text: 'Hola' } } },
+    { field: 'comments', value: { id: 'x' } }
+  ] }] };
+  const ev = eventosDeWebhook(datos);
+  assert.strictEqual(ev.length, 1);
+  assert.strictEqual(ev[0].entrada.texto, 'Hola');
+});
+
+test('webhook: is_echo y quick_reply tambien se reconocen fuera de message', () => {
+  const ev = eventosDeWebhook(webhook([
+    { sender: { id: 'N1' }, recipient: { id: 'C1' }, message: { mid: 'e1', text: 'x' }, is_echo: true },
+    { sender: { id: 'C1' }, message: { mid: 'q1', text: 'Ver' }, quick_reply: { payload: 'buscar' } }
+  ]));
+  assert.strictEqual(ev[0].eco, true);
+  assert.strictEqual(ev[1].entrada.id, 'buscar');
+});
+
+test('resumen del webhook no incluye contenido ni ids de personas', () => {
+  const r = resumenWebhook(webhook([{ sender: { id: 'C1' }, message: { mid: 'm1', text: 'secreto' } }]));
+  assert.strictEqual(r, 'instagram messaging:1');
+  assert.ok(!r.includes('secreto') && !r.includes('C1'));
+  assert.strictEqual(resumenWebhook({ object: 'instagram', entry: [{ changes: [{ field: 'comments' }] }] }), 'instagram changes:comments');
+  assert.strictEqual(resumenWebhook(null), 'cuerpo no valido');
 });
 
 test('webhook: objetos que no son de instagram o vacios no dan eventos ni lanzan error', () => {

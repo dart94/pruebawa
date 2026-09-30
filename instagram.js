@@ -42,20 +42,40 @@ function mensajeIGPlano(msg) {
 // Extrae los eventos que importan de un webhook de Instagram: { id, de, entrada, eco }.
 // entrada tiene la misma forma que entiende bot.js, con canal: 'instagram'.
 // Los ecos (mensajes enviados desde la propia cuenta, por ejemplo por el dueno desde la app) llevan eco: true.
+// Los mensajes pueden venir en entry[].messaging[] o, segun el tipo de login y los tests del panel de Meta,
+// en entry[].changes[] con field 'messages' (el contenido va en value). Se aceptan las dos formas.
+function eventosCrudos(entrada) {
+  const cambios = (entrada.changes || []).filter((c) => c && c.field === 'messages' && c.value).map((c) => c.value);
+  return [...(entrada.messaging || []), ...cambios];
+}
+
+// Resumen sin contenido ni datos de personas, para diagnosticar en el log que llego: "instagram messaging:1 changes:messages"
+function resumenWebhook(datos) {
+  if (!datos || typeof datos !== 'object') return 'cuerpo no valido';
+  const partes = [];
+  for (const e of datos.entry || []) {
+    if ((e.messaging || []).length) partes.push(`messaging:${e.messaging.length}`);
+    if ((e.changes || []).length) partes.push(`changes:${e.changes.map((c) => c.field).join(',')}`);
+  }
+  return `${datos.object || 'sin object'} ${partes.join(' ') || 'sin entradas'}`;
+}
+
 function eventosDeWebhook(datos) {
   const eventos = [];
   if (!datos || datos.object !== 'instagram') return eventos;
   for (const entrada of datos.entry || []) {
-    for (const ev of entrada.messaging || []) {
+    for (const ev of eventosCrudos(entrada)) {
       const m = ev.message;
       const de = ev.sender && ev.sender.id;
+      const eco = Boolean(m && (m.is_echo || ev.is_echo));
+      const respuestaRapida = m && (m.quick_reply || ev.quick_reply);
       if (m) {
-        if (m.is_echo) {
+        if (eco) {
           eventos.push({ id: m.mid, de: ev.recipient && ev.recipient.id, entrada: null, eco: true });
         } else if (m.is_deleted) {
           continue;
-        } else if (m.quick_reply && m.quick_reply.payload) {
-          eventos.push({ id: m.mid, de, eco: false, entrada: { tipo: 'seleccion', id: m.quick_reply.payload, de, canal: 'instagram' } });
+        } else if (respuestaRapida && respuestaRapida.payload) {
+          eventos.push({ id: m.mid, de, eco: false, entrada: { tipo: 'seleccion', id: respuestaRapida.payload, de, canal: 'instagram' } });
         } else if (typeof m.text === 'string' && m.text) {
           eventos.push({ id: m.mid, de, eco: false, entrada: { tipo: 'texto', texto: m.text, de, canal: 'instagram' } });
         } else {
@@ -69,4 +89,4 @@ function eventosDeWebhook(datos) {
   return eventos;
 }
 
-module.exports = { mensajeIG, mensajeIGPlano, eventosDeWebhook, LIM };
+module.exports = { mensajeIG, mensajeIGPlano, eventosDeWebhook, resumenWebhook, LIM };
