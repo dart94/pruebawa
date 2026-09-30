@@ -78,7 +78,17 @@ La plantilla se crea en WhatsApp Manager (categoria Utilidad, idioma es_MX, nomb
 Hasta que Meta la apruebe, el envio falla y queda `[aviso-dueno-error]` en el log; el cliente no lo nota.
 El mismo cliente, tipo y producto no vuelve a avisar en 10 minutos.
 
-## 8. Conversacion
+## 8. Monitoreo
+
+- `GET /` (liveness): responde 200 si el proceso esta vivo. Es la ruta que conviene usar como healthcheck de Railway.
+- `GET /health` (readiness): responde 200 `{"ok":true,"fallas":[]}` o 503 `{"ok":false,"fallas":["catalogo"|"token"]}`.
+  Comprueba que el catalogo se pueda leer y tenga productos, y que el token de Meta siga valido
+  (cache de 5 min para no consultar a Meta en cada ping). No expone detalles internos.
+- Un monitor externo debe consultar `/health` cada pocos minutos y avisar por correo si da 503 o no responde.
+  El propio servidor no puede avisar de sus fallas graves (caido, token vencido, Meta caido) porque dependen de lo que falla.
+- Los logs registran `[salud] FALLA en: ...` al cambiar de estado, y `[estado] ... failed MOTIVO ...` cuando Meta no entrega un mensaje.
+
+## 9. Conversacion
 
 El flujo esta en `bot.js` y `mensajes.js` (botones, listas y limites de Meta). Los textos, las etiquetas de
 categoria, la moneda y el nombre del negocio estan en **`negocio.json`**: para cambiar un mensaje se edita ese

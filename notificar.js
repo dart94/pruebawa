@@ -21,6 +21,12 @@ function limpio(valor, max) {
   return (t || '-').slice(0, max);
 }
 
+// Desde Instagram no hay numero de telefono: el dueno contesta desde la bandeja de DMs de la app.
+function quienEs(evento) {
+  if (evento.canal === 'instagram') return 'Instagram, revisa tus DMs';
+  return evento.cliente ? '+' + evento.cliente : '';
+}
+
 function payloadAviso(evento, cfg) {
   return {
     messaging_product: 'whatsapp',
@@ -34,7 +40,7 @@ function payloadAviso(evento, cfg) {
         parameters: [
           { type: 'text', text: limpio(TIPOS[evento.tipo] || evento.tipo, 60) },
           { type: 'text', text: limpio(evento.producto, 100) },
-          { type: 'text', text: limpio(evento.cliente ? '+' + evento.cliente : '', 30) }
+          { type: 'text', text: limpio(quienEs(evento), 30) }
         ]
       }]
     }

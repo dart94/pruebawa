@@ -22,15 +22,22 @@
 | Riesgo | Impacto | Sugerencia |
 |---|---|---|
 | **URL del CSV público.** Cualquiera que la conozca ve la pestaña `BOT`. | Bajo (precios y stock públicos), pero no debe contener nada más. | Mantener la pestaña solo con columnas públicas; revisar periódicamente. |
-| **Aviso al dueño sin plantilla aprobada** | Los avisos fallan en silencio (solo log). | Monitorear `[aviso-dueno-error]`; confirmar aprobación. |
+| **Aviso al dueño puede fallar en la entrega** | Meta responde 200 al enviar y reporta `failed` después (visto con método de pago faltante). Nadie se entera salvo por el log. | El log ahora imprime `[estado] ... failed MOTIVO <código>`. Vigilarlo; falta alerta automática. |
 | **Estado en memoria** (caché y anti-repetición) | Se pierde al reiniciar; puede repetir un aviso tras un redeploy. | Aceptable hoy. |
 | **Interactivos en otros dispositivos** | Probados en el WhatsApp del dueño (25-sep-2026) y se ven bien; falta ver versiones antiguas. | Hay respaldo en texto plano. |
 | **Disponibilidad desfasada** (venta en otro canal, hoja sin actualizar) | El bot ofrece algo ya vendido. | Aviso "sujeto a confirmación"; mantener la hoja al día. |
-| **Sin monitoreo ni alertas** | Una caída o token caducado pasa desapercibida. | Definir una alerta mínima (ver `roadmap.md`). |
+| **Monitor externo sin configurar** | `/health` ya detecta catálogo caído y token inválido, pero nadie lo consulta todavía: una caída sigue pasando desapercibida. | Configurar un monitor externo que permita uso comercial (ver `infrastructure.md`). |
 | **Un solo proceso, sin cola** | Picos de mensajes se procesan en serie. | Suficiente para el volumen actual. |
 | **Sin límite de tasa por cliente** | Un cliente puede generar muchas búsquedas. | Bajo riesgo; vigilar. |
 | **Datos de terceros en el libro de inventario** (nombres de clientes en ventas) | Fuga si se publica el documento completo. | Publicar solo la pestaña `BOT`. Nunca "Documento completo". |
 | **Dependencia de la verificación de negocio de Meta** | Bloquea coexistencia y aviso de escala. | Ver D11. |
+
+## Incidentes
+
+| Fecha | Qué pasó | Causa | Aprendizaje |
+|---|---|---|---|
+| 24-sep-2026 | Dos mensajes reales enviados por una prueba local | El `.env` real se cargó en una prueba pensada como simulación | `DRY_RUN=1` y advertencia en README |
+| 26-sep-2026 | El aviso al dueño no llegó (`failed`) aunque la API respondió 200 | Faltaba método de pago en la cuenta de WhatsApp Business | Un 200 al enviar no garantiza entrega; revisar el estado posterior. El motivo ahora se registra en el log. |
 
 ## Casos límite cubiertos por pruebas
 

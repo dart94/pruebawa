@@ -93,7 +93,7 @@ function ofrecibles(productos) {
 
 // ---------- Carga con cache ----------
 
-const cache = { productos: null, cargadoEn: 0, fuente: null };
+const cache = { productos: null, cargadoEn: 0, ultimoExito: 0, fuente: null };
 let enCurso = null;
 
 async function descargar() {
@@ -118,6 +118,7 @@ async function obtenerCatalogo() {
       .then(({ productos, fuente }) => {
         cache.productos = ofrecibles(productos);
         cache.cargadoEn = Date.now();
+        cache.ultimoExito = Date.now();
         cache.fuente = fuente;
       })
       .catch((e) => {
@@ -128,6 +129,13 @@ async function obtenerCatalogo() {
   }
   await enCurso;
   return cache.productos;
+}
+
+// Para /health: true si hay catalogo con productos y se pudo leer la hoja hace poco (maximo 3 veces el TTL).
+// Fuerza una lectura si la copia ya vencio, asi un monitor externo detecta la falla aunque no lleguen clientes.
+async function verificarCatalogo() {
+  const productos = await obtenerCatalogo();
+  return !!productos && productos.length > 0 && Date.now() - cache.ultimoExito < 3 * ttlMs();
 }
 
 // ---------- Busqueda ----------
@@ -184,4 +192,4 @@ function listar(productos) {
   return visibles.join('\n');
 }
 
-module.exports = { obtenerCatalogo, buscar, listar, parsearCsv, filasAProductos, ofrecibles, tokens, normalizar };
+module.exports = { obtenerCatalogo, verificarCatalogo, buscar, listar, parsearCsv, filasAProductos, ofrecibles, tokens, normalizar };

@@ -14,6 +14,13 @@ test('arma la plantilla con las 3 variables en orden', () => {
     ['Me interesa', 'Storm Esmeralda', '+5216629990000']);
 });
 
+test('desde Instagram no inventa un telefono: indica revisar los DMs', () => {
+  const p = payloadAviso({ tipo: 'interes', producto: 'Gogeta', cliente: '900000000000001', canal: 'instagram' }, CFG);
+  const cliente = p.template.components[0].parameters[2].text;
+  assert.strictEqual(cliente, 'Instagram, revisa tus DMs');
+  assert.ok(cliente.length <= 30);
+});
+
 test('sin producto usa guion; sin numero de cliente no revienta', () => {
   const p = payloadAviso({ tipo: 'persona', cliente: undefined }, CFG);
   assert.deepStrictEqual(p.template.components[0].parameters.map((x) => x.text), ['Hablar con alguien', '-', '-']);

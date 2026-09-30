@@ -145,6 +145,18 @@ test('mas de 10 resultados: 9 productos + fila para afinar', async () => {
   validarLimites(m);
 });
 
+test('desde instagram el aviso al dueno lleva el canal', async () => {
+  const { alAvisar } = require('../bot');
+  const eventos = [];
+  alAvisar(async (e) => { eventos.push(e); });
+  await responder({ tipo: 'seleccion', id: 'interes:D02', de: '900000000000001', canal: 'instagram' });
+  await new Promise((r) => setImmediate(r));
+  assert.deepStrictEqual(eventos, [
+    { tipo: 'interes', producto: 'Figura Heroe Azul', cliente: '900000000000001', canal: 'instagram' }
+  ]);
+  alAvisar(async () => {});
+});
+
 test('me interesa y hablar con alguien avisan al dueno con cliente y producto', async () => {
   const { alAvisar } = require('../bot');
   const eventos = [];

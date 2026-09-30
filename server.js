@@ -6,8 +6,11 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { responder, alAvisar } = require('./bot');
+const { verificarCatalogo } = require('./catalogo');
+const { estadoSalud } = require('./salud');
 const { avisarDueno } = require('./notificar');
 const { texto, payload, textoPlano } = require('./mensajes');
+const { mensajeIG, mensajeIGPlano, eventosDeWebhook } = require('./instagram');
 
 // ---------- Configuracion ----------
 
@@ -34,6 +37,11 @@ const VERIFY_TOKEN   = process.env.VERIFY_TOKEN || '';
 const TOKEN          = process.env.WHATSAPP_TOKEN || '';
 const PHONE_ID       = process.env.PHONE_NUMBER_ID || '';
 const APP_SECRET     = process.env.APP_SECRET || '';
+const IG_TOKEN       = process.env.IG_TOKEN || '';        // token de la Pagina vinculada a la cuenta de Instagram
+const IG_USER_ID     = process.env.IG_USER_ID || '';      // id de la cuenta profesional de Instagram
+const IG_APP_SECRET  = process.env.IG_APP_SECRET || '';   // solo si la app de Instagram es distinta a la de WhatsApp
+// Fase de pruebas: si se define, el bot de Instagram solo contesta a estos ids (separados por coma); los demas DMs los ignora.
+const IG_PERMITIDOS  = (process.env.IG_PERMITIDOS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const VERSION        = process.env.API_VERSION || 'v26.0';
 const API            = `https://graph.facebook.com/${VERSION}`;
 const PRODUCCION     = process.env.NODE_ENV === 'production';
@@ -100,6 +108,36 @@ async function enviar(para, msg) {
   }
 }
 
+// Envia un mensaje por Instagram. Si Meta rechaza las respuestas rapidas, reintenta como texto plano.
+async function llamarInstagram(para, mensaje) {
+  return fetch(`${API}/${IG_USER_ID}/messages`, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${IG_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipient: { id: para }, message: mensaje })
+  });
+}
+
+async function enviarInstagram(para, msg) {
+  if (DRY_RUN) {
+    console.log(`[dry-run] instagram ${msg.tipo} para ${enmascarar(para)}${LOG_CONTENIDO ? ':\n' + JSON.stringify(mensajeIG(msg), null, 1) : ''}`);
+    return;
+  }
+  if (!IG_TOKEN || !IG_USER_ID) {
+    console.log('[aviso] Falta IG_TOKEN o IG_USER_ID en .env, no se envia nada por Instagram.');
+    return;
+  }
+  const res = await llamarInstagram(para, mensajeIG(msg));
+  if (res.ok) {
+    console.log(`[envio-ig] ${res.status} ${msg.tipo} a ${enmascarar(para)}`);
+    return;
+  }
+  console.log(`[envio-ig-error] ${res.status} ${await res.text()}`);
+  if (msg.tipo !== 'texto') {
+    const respaldo = await llamarInstagram(para, mensajeIGPlano(msg));
+    console.log(`[envio-ig-respaldo] ${respaldo.status} texto plano a ${enmascarar(para)}`);
+  }
+}
+
 // Envia un payload ya armado (plantilla de aviso al dueno). Devuelve true si Meta lo acepto.
 async function enviarPayload(cuerpo) {
   if (DRY_RUN) {
@@ -112,6 +150,34 @@ async function enviarPayload(cuerpo) {
   return res.ok;
 }
 alAvisar((evento) => avisarDueno(evento, enviarPayload));
+
+// Para /health: comprueba que el token siga valido consultando el numero en la API (cache de 5 min).
+let tokenEstado = { ok: null, en: 0 };
+async function verificarToken() {
+  if (DRY_RUN) return true;
+  if (!TOKEN || !PHONE_ID) return false;
+  if (tokenEstado.ok !== null && Date.now() - tokenEstado.en < 5 * 60 * 1000) return tokenEstado.ok;
+  try {
+    const res = await fetch(`${API}/${PHONE_ID}?fields=id`, { headers: { 'Authorization': `Bearer ${TOKEN}` }, signal: AbortSignal.timeout(8000) });
+    tokenEstado = { ok: res.ok, en: Date.now() };
+    if (!res.ok) console.log(`[salud] la API de Meta respondio ${res.status} al verificar el token`);
+  } catch (e) {
+    tokenEstado = { ok: false, en: Date.now() };
+    console.log(`[salud] no se pudo consultar Meta: ${e.message}`);
+  }
+  return tokenEstado.ok;
+}
+
+let ultimaSaludOk = true;
+async function responderSalud(res) {
+  const salud = await estadoSalud({ catalogo: verificarCatalogo, token: verificarToken });
+  if (salud.ok !== ultimaSaludOk) {
+    ultimaSaludOk = salud.ok;
+    console.log(salud.ok ? '[salud] recuperado' : `[salud] FALLA en: ${salud.fallas.join(', ')}`);
+  }
+  res.writeHead(salud.ok ? 200 : 503, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+  res.end(JSON.stringify(salud));
+}
 
 async function marcarLeido(idMensaje) {
   if (DRY_RUN || !TOKEN || !PHONE_ID) return;
@@ -138,18 +204,26 @@ function entradaDe(mensaje) {
 // ---------- Firma de Meta ----------
 
 function firmaValida(cuerpoCrudo, cabecera) {   // cuerpoCrudo: Buffer
-  if (!APP_SECRET) return !PRODUCCION;     // sin secreto solo se acepta fuera de produccion (pruebas locales)
+  const secretos = [APP_SECRET, IG_APP_SECRET].filter(Boolean);   // WhatsApp e Instagram pueden ser apps distintas
+  if (!secretos.length) return !PRODUCCION;     // sin secreto solo se acepta fuera de produccion (pruebas locales)
   if (!cabecera) return false;
-  const esperado = 'sha256=' + crypto.createHmac('sha256', APP_SECRET).update(cuerpoCrudo).digest('hex');
-  const a = Buffer.from(esperado);
   const b = Buffer.from(cabecera);
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
+  return secretos.some((secreto) => {
+    const a = Buffer.from('sha256=' + crypto.createHmac('sha256', secreto).update(cuerpoCrudo).digest('hex'));
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+  });
 }
 
 // ---------- Servidor ----------
 
 const servidor = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+
+  // Monitor externo (readiness): 200 si catalogo y token estan bien, 503 si no
+  if (req.method === 'GET' && url.pathname === '/health') {
+    responderSalud(res).catch(() => { res.writeHead(503); res.end(); });
+    return;
+  }
 
   // Verificacion inicial que hace Meta al guardar el webhook
   if (req.method === 'GET' && (url.pathname === '/webhook' || url.searchParams.has('hub.mode'))) {
@@ -194,6 +268,29 @@ const servidor = http.createServer((req, res) => {
 
       try {
         const datos = JSON.parse(crudo.toString('utf8'));
+
+        for (const ev of eventosDeWebhook(datos)) {
+          if (yaProcesado(ev.id)) {
+            console.log(`[duplicado-ig] ${ev.id} ignorado`);
+            continue;
+          }
+          if (ev.eco) {   // mensaje enviado desde la propia cuenta (por ejemplo el dueno desde la app): el bot no responde
+            console.log(`[eco-ig] mensaje propio hacia ${enmascarar(ev.de)}`);
+            continue;
+          }
+          if (IG_PERMITIDOS.length && !IG_PERMITIDOS.includes(String(ev.de))) {
+            console.log(`[ig-ignorado] ${enmascarar(ev.de)} no esta en IG_PERMITIDOS`);
+            continue;
+          }
+          try {
+            const detalle = LOG_CONTENIDO && ev.entrada.tipo === 'texto' ? `: ${ev.entrada.texto}` : '';
+            console.log(`[entrante-ig] ${enmascarar(ev.de)} tipo ${ev.entrada.tipo}${detalle}`);
+            await enviarInstagram(ev.de, await responder(ev.entrada));
+          } catch (e) {
+            console.log(`[error-ig] mensaje ${ev.id}: ${e.message}`);
+          }
+        }
+
         for (const entrada of datos.entry || []) {
           for (const cambio of entrada.changes || []) {
             const valor = cambio.value || {};

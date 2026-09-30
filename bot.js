@@ -16,6 +16,11 @@ function aviso(evento) {   // sin await: el aviso no retrasa ni rompe la respues
   Promise.resolve().then(() => avisar(evento)).catch((e) => console.log(`[aviso-error] ${e.message}`));
 }
 
+// WhatsApp es el canal por defecto y no lleva marca; otros canales (instagram) la traen en la entrada
+function canalDe(entrada) {
+  return entrada.canal ? { canal: entrada.canal } : {};
+}
+
 const BTN = {
   buscar: { id: 'buscar', titulo: negocio.botones.buscar },
   buscarOtro: { id: 'buscar', titulo: negocio.botones.buscar_otro },
@@ -122,7 +127,7 @@ async function responder(entrada) {
     if (id === 'menu') return menu();
     if (id === 'persona') {
       console.log('[persona] el cliente pidio hablar con alguien');
-      aviso({ tipo: 'persona', cliente: entrada.de });
+      aviso({ tipo: 'persona', cliente: entrada.de, ...canalDe(entrada) });
       return botones(fmt(T.persona), [BTN.menu]);
     }
     if (id === 'escribir') return texto(T.escribir);
@@ -146,7 +151,7 @@ async function responder(entrada) {
       if (!p) return botones(T.producto_no_disponible, [BTN.buscarOtro, BTN.persona]);
       if (id.startsWith('interes:')) {
         console.log(`[interes] producto ${p.id}`);
-        aviso({ tipo: 'interes', producto: nombreLimpio(p), cliente: entrada.de });
+        aviso({ tipo: 'interes', producto: nombreLimpio(p), cliente: entrada.de, ...canalDe(entrada) });
         return botones(fmt(T.interes, { producto: nombreLimpio(p) }), [BTN.menu]);
       }
       return detalle(p);

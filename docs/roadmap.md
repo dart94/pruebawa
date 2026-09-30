@@ -8,16 +8,16 @@
 - Adaptación de textos y flujo a ToyLoco.
 - Catálogo desde Google Sheets (pestaña `BOT`), con búsqueda y caché.
 - Conversación con botones y listas, tono cercano, respaldo en texto plano.
-- Aviso al dueño por plantilla de WhatsApp (código listo, plantilla pendiente de aprobación).
+- Aviso al dueño por plantilla de WhatsApp (activo y verificado el 26-sep-2026, tras aprobar la plantilla y agregar método de pago).
 - Pruebas automáticas (`npm test`).
 - Configuración por negocio en `negocio.json`, validada al arrancar.
 - Documentación en `docs/`.
+- Endpoint `/health` con verificación de catálogo y token, y registro del motivo cuando Meta no entrega un mensaje.
 
 ## En espera (depende de terceros)
 
 | Tarea | Depende de |
 |---|---|
-| Activar avisos al dueño | Aprobación de la plantilla `aviso_cliente` en Meta y variable `DUENO_WHATSAPP` en Railway |
 | Confirmar costo del aviso | Categoría final de la plantilla (hoy Marketing) y tarifas vigentes de Meta |
 
 ## Siguiente (sin bloqueos)
@@ -25,7 +25,7 @@
 1. ~~Probar botones y listas en el WhatsApp real~~ (hecho el 25-sep-2026, se ven bien).
 2. ~~Configuración por negocio (`negocio.json`)~~ (hecho: textos, etiquetas, moneda y nombre salen de un archivo validado).
 3. Pruebas de robustez: catálogo caído a mitad de conversación, reinicios.
-4. Monitoreo mínimo: alerta si el servicio cae o el token falla.
+4. Monitoreo: `/health` listo (catálogo + token). Falta contratar y configurar el monitor externo (ver `infrastructure.md`).
 5. Completar información del catálogo: accesorios con cantidad, cartas sueltas de TCG.
 
 ## Decisiones de negocio pendientes

@@ -31,7 +31,7 @@ Menos texto, más toques. Horario y ubicación ocultos hasta tener los datos. Te
 
 ## D10. Aviso al dueño por plantilla de WhatsApp
 El dueño se entera de "Me interesa" y "Hablar con alguien" por un mensaje de plantilla, y atiende escribiéndole al cliente desde su propio WhatsApp. Se descartó "mandar un mensaje cada 24 h": la ventana de 24 h solo se abre cuando el otro lado escribe al número del negocio, no cuando el negocio envía.
-**Abierto:** la plantilla está pendiente de aprobación y Meta la clasificó como Marketing (más cara y con más restricciones que Utilidad). Tarifas sin verificar.
+**Estado (26-sep-2026):** plantilla aprobada y avisos funcionando. Meta la clasificó como Marketing (más cara que Utilidad). El primer intento falló en la entrega (`failed`, sin motivo en el log) hasta que se agregó un método de pago a la cuenta de WhatsApp Business: sin él Meta no entrega plantillas. Tarifas por mensaje aún sin verificar.
 
 ## D11. Coexistencia (dueño contestando desde la app) — pendiente, no bloquea
 Meta la ofrece solo a Tech Providers o Solution Partners. Ser Tech Provider exige verificar el negocio ante Meta, y hoy la verificación está bloqueada por falta de documentación (no hay razón social/RFC registrados ante Meta).
