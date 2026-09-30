@@ -11,6 +11,8 @@ const { estadoSalud } = require('./salud');
 const { avisarDueno } = require('./notificar');
 const { texto, payload, textoPlano } = require('./mensajes');
 const { mensajeIG, mensajeIGPlano, eventosDeWebhook } = require('./instagram');
+const { paginaPrivacidad } = require('./privacidad');
+const { negocio } = require('./negocio');
 
 // ---------- Configuracion ----------
 
@@ -223,6 +225,16 @@ const servidor = http.createServer((req, res) => {
   if (req.method === 'GET' && url.pathname === '/health') {
     responderSalud(res).catch(() => { res.writeHead(503); res.end(); });
     return;
+  }
+
+  // Aviso de privacidad publico (Meta pide una URL para publicar la app)
+  if (req.method === 'GET' && url.pathname === '/privacidad') {
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'"
+    });
+    return res.end(paginaPrivacidad({ nombre: negocio.nombre, contacto: process.env.PRIVACIDAD_CONTACTO }));
   }
 
   // Verificacion inicial que hace Meta al guardar el webhook
