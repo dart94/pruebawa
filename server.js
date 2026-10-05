@@ -11,6 +11,7 @@ const { estadoSalud } = require('./salud');
 const { avisarDueno } = require('./notificar');
 const { texto, payload, textoPlano } = require('./mensajes');
 const { mensajeIG, mensajeIGPlano, eventosDeWebhook, resumenWebhook } = require('./instagram');
+const { crearPausa } = require('./pausa');
 const { paginaPrivacidad } = require('./privacidad');
 const { negocio } = require('./negocio');
 
@@ -44,6 +45,9 @@ const IG_USER_ID     = process.env.IG_USER_ID || '';      // id de la cuenta pro
 const IG_APP_SECRET  = process.env.IG_APP_SECRET || '';   // solo si la app de Instagram es distinta a la de WhatsApp
 // Fase de pruebas: si se define, el bot de Instagram solo contesta a estos ids (separados por coma); los demas DMs los ignora.
 const IG_PERMITIDOS  = (process.env.IG_PERMITIDOS || '').split(',').map((s) => s.trim()).filter(Boolean);
+// Horas que el bot se calla con un cliente de Instagram despues de que el dueno le contesta a mano. 0 = sin pausa.
+const IG_PAUSA_HORAS = Number.isFinite(Number(process.env.IG_PAUSA_HORAS)) && process.env.IG_PAUSA_HORAS !== '' ? Number(process.env.IG_PAUSA_HORAS) : 3;
+const pausaIG        = crearPausa({ duracionMs: IG_PAUSA_HORAS * 3600000 });
 const VERSION        = process.env.API_VERSION || 'v26.0';
 const API            = `https://graph.facebook.com/${VERSION}`;
 // Con un token de Instagram Business Login el envio va por graph.instagram.com (ej. https://graph.instagram.com/v26.0).
@@ -131,14 +135,22 @@ async function enviarInstagram(para, msg) {
     console.log('[aviso] Falta IG_TOKEN o IG_USER_ID en .env, no se envia nada por Instagram.');
     return;
   }
+  // Se anota el envio antes y despues para no confundir el eco del bot con una respuesta del dueno (ver pausa.js)
+  pausaIG.registrarEnvio(para);
   const res = await llamarInstagram(para, mensajeIG(msg));
   if (res.ok) {
+    const cuerpo = await res.json().catch(() => null);
+    pausaIG.registrarEnvio(para, cuerpo && cuerpo.message_id);
     console.log(`[envio-ig] ${res.status} ${msg.tipo} a ${enmascarar(para)}`);
     return;
   }
   console.log(`[envio-ig-error] ${res.status} ${await res.text()}`);
   if (msg.tipo !== 'texto') {
     const respaldo = await llamarInstagram(para, mensajeIGPlano(msg));
+    if (respaldo.ok) {
+      const cuerpo = await respaldo.json().catch(() => null);
+      pausaIG.registrarEnvio(para, cuerpo && cuerpo.message_id);
+    }
     console.log(`[envio-ig-respaldo] ${respaldo.status} texto plano a ${enmascarar(para)}`);
   }
 }
@@ -293,12 +305,21 @@ const servidor = http.createServer((req, res) => {
             console.log(`[duplicado-ig] ${ev.id} ignorado`);
             continue;
           }
-          if (ev.eco) {   // mensaje enviado desde la propia cuenta (por ejemplo el dueno desde la app): el bot no responde
-            console.log(`[eco-ig] mensaje propio hacia ${enmascarar(ev.de)}`);
+          if (ev.eco) {   // mensaje enviado desde la propia cuenta: el bot no responde a ecos
+            if (pausaIG.activa && !pausaIG.esEcoDelBot(ev.de, ev.id)) {
+              pausaIG.pausar(ev.de);   // lo escribio el dueno desde la app: el bot se calla con este cliente un rato
+              console.log(`[eco-ig] el dueno contesto a ${enmascarar(ev.de)}: bot en pausa ${IG_PAUSA_HORAS} h con este cliente`);
+            } else {
+              console.log(`[eco-ig] mensaje propio hacia ${enmascarar(ev.de)}`);
+            }
             continue;
           }
           if (IG_PERMITIDOS.length && !IG_PERMITIDOS.includes(String(ev.de))) {
             console.log(`[ig-ignorado] ${enmascarar(ev.de)} no esta en IG_PERMITIDOS`);
+            continue;
+          }
+          if (pausaIG.estaPausado(ev.de)) {
+            console.log(`[ig-pausa] ${enmascarar(ev.de)} en pausa (el dueno esta atendiendo), el bot no responde`);
             continue;
           }
           try {
