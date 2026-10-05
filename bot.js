@@ -3,7 +3,7 @@
 // Es asincrono porque consulta el catalogo. No envia nada: eso lo hace server.js.
 // Los textos, etiquetas y el nombre del negocio vienen de negocio.json (ver negocio.js).
 
-const { obtenerCatalogo, buscar, normalizar } = require('./catalogo');
+const { obtenerCatalogo, buscar, normalizar, tokens } = require('./catalogo');
 const { texto, botones, lista } = require('./mensajes');
 const { negocio, fmt } = require('./negocio');
 
@@ -116,7 +116,22 @@ async function resultadosDeBusqueda(consulta, productos) {
 // ---------- entrada principal ----------
 
 const SALUDO = /^(hola+|holi+|buenas|buenos dias|buenas tardes|buenas noches|info|informacion|menu|inicio)\b/;
-const DATOS_PENDIENTES = /\b(horario|horarios|hora|abren|cierran|ubicacion|direccion|donde estan|donde queda)\b/;
+// Saludo(s) del inicio con su puntuacion: lo que sigue ("hola, tienen el goku?") puede traer la intencion real
+const SALUDO_INICIAL = /^(?:(?:hola+|holi+|buenas|buenos dias|buenas tardes|buenas noches|info|informacion|menu|inicio)\b[\s,.!¡¿?]*)+/;
+// Mensajes de cierre ("ok gracias"): no son una busqueda
+const CIERRE = new Set(['ok', 'okey', 'oki', 'okay', 'vale', 'listo', 'perfecto', 'excelente', 'genial', 'gracias', 'muchas',
+  'mil', 'de', 'nada', 'sip', 'claro', 'adios', 'bye', 'hasta', 'luego', 'saludos']);
+// El cliente quiere comprar o apartar (el bot aun no recuerda de que producto hablaban)
+const COMPRA = /\b(quiero|apart\w*|compr\w*|llevo|llevar|separ\w*|pido|pedir|interesa\w*)\b/;
+// Preguntas frecuentes con respuesta fija en negocio.json (textos.<clave>); si el negocio no la define, se usa dato_pendiente.
+// Van en este orden y tienen prioridad sobre la busqueda de productos.
+const FAQ = [
+  ['apartado', /\b(como (se )?apart\w*|se puede apartar|apartado|anticipo|enganche|separan)\b/],
+  ['pagos', /\b(pagos?|pagar|pagan|transferencia|deposito|mercado ?pago|con tarjeta|tarjetas? de (credito|debito)|efectivo|oxxo|contra ?entrega)\b/],
+  ['envios', /\b(envios?|enviar|enviamos|envian|envias|mandan|mandas|mandar|paqueterias?|domicilio|rastreo)\b/],
+  ['horario', /\b(horarios?|abren|cierran|abiertos?|atienden|a que hora)\b/],
+  ['ubicacion', /\b(ubicacion|direccion|donde estan|donde queda|donde se ubican|tienda fisica|sucursal|local fisico)\b/]
+];
 
 async function responder(entrada) {
   if (entrada.tipo === 'otro') return botones(T.no_es_texto, [BTN.buscar, BTN.persona]);
@@ -161,10 +176,23 @@ async function responder(entrada) {
 
   // Texto libre
   const t = normalizar(entrada.texto);
-  if (SALUDO.test(t)) return menu();
+  if (SALUDO.test(t)) {
+    const resto = t.replace(SALUDO_INICIAL, '').trim();
+    if (!resto || (!tokens(resto).length && !COMPRA.test(resto))) return menu();
+    return responder({ ...entrada, texto: resto });   // "hola, tienen el goku?" -> se atiende el goku, no solo el saludo
+  }
+  const palabras = t.split(/[^a-z0-9]+/).filter(Boolean);
+  if (palabras.length && palabras.every((w) => CIERRE.has(w))) return texto(T.gracias);
   if (t === '1') return responder({ ...entrada, tipo: 'seleccion', id: 'buscar' });
   if (t === '2') return responder({ ...entrada, tipo: 'seleccion', id: 'persona' });
-  if (DATOS_PENDIENTES.test(t)) return botones(T.dato_pendiente, [BTN.persona, BTN.buscar]);
+  const faq = FAQ.find(([, patron]) => patron.test(t));
+  if (faq) {
+    console.log(`[faq] ${faq[0]}`);
+    return botones(T[faq[0]] || T.dato_pendiente, [BTN.persona, BTN.buscar]);
+  }
+  if (!tokens(entrada.texto).length) {   // nada que buscar: "sí lo quiero", "cuanto cuesta"...
+    return botones(COMPRA.test(t) ? T.compra_sin_producto : T.escribir, [BTN.buscar, BTN.persona]);
+  }
   const productos = await obtenerCatalogo();
   if (!productos) return sinCatalogo();
   return resultadosDeBusqueda(entrada.texto, productos);   // cualquier otro texto se toma como busqueda

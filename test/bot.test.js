@@ -88,12 +88,34 @@ test('cualquier texto fuera del menu se toma como busqueda, sin regañar', async
   assert.deepStrictEqual(m.opciones.map((o) => o.id), ['buscar', 'persona']);
 });
 
-test('horario y ubicacion: no se inventan, se reconoce que falta el dato', async () => {
-  for (const t of ['a que hora abren', 'cual es su horario', 'donde estan']) {
-    const m = await texto(t);
-    assert.match(m.cuerpo, /todavía no lo tengo/);
-    assert.doesNotMatch(m.cuerpo, /\d{1,2}:\d{2}/);
+test('preguntas frecuentes: horario, ubicacion, envios, pagos y apartado tienen respuesta fija', async () => {
+  const casos = [
+    [['a que hora abren', 'cual es su horario', 'hola, a que hora atienden?', 'abren los domingos?'], /8:00 a\. m\. a 8:00 p\. m\./],
+    [['donde estan', 'tienen tienda fisica?', 'cual es su direccion'], /No tenemos local físico/],
+    [['hacen envios?', 'me lo mandas a Guadalajara?', 'cuanto cuesta el envio', 'que paqueteria usan'], /a cargo del cliente/],
+    [['formas de pago', 'aceptan mercado pago?', 'se puede pagar con tarjeta', 'cuenta para transferencia'], /transferencia, depósito y Mercado Pago/],
+    [['como se aparta', 'se puede apartar?', 'cuanto es el anticipo', 'como apartan'], /50%.*14 días.*reembolsa/]
+  ];
+  for (const [mensajes, esperado] of casos) {
+    for (const t of mensajes) {
+      const m = await texto(t);
+      assert.match(m.cuerpo, esperado, t);
+      assert.deepStrictEqual(m.opciones.map((o) => o.id), ['persona', 'buscar']);
+      validarLimites(m);
+    }
   }
+});
+
+test('las respuestas fijas no inventan: sin direccion, sin tarifas ni tiempos de entrega', async () => {
+  for (const t of ['a que hora abren', 'donde estan', 'hacen envios?', 'formas de pago', 'como se aparta']) {
+    const m = await texto(t);
+    assert.doesNotMatch(m.cuerpo, /\$\s?\d|\d+\s*(días hábiles|dias habiles|horas)/i, t);
+  }
+  assert.doesNotMatch((await texto('hacen envios?')).cuerpo, /gratis|llega en|días hábiles/i);
+});
+
+test('quiero apartar un producto sigue yendo al producto, no a la politica de apartado', async () => {
+  assert.match((await texto('quiero apartar el pirata')).cuerpo, /Figura Pirata Sombrero/);
 });
 
 test('me interesa y hablar con alguien confirman sin prometer tiempos', async () => {
@@ -180,4 +202,56 @@ test('si el aviso falla, el cliente igual recibe su respuesta', async () => {
   assert.match(m.cuerpo, /Listo/);
   await new Promise((r) => setImmediate(r));
   alAvisar(async () => {});
+});
+
+test('saludo con intencion: "hola, tienen el pirata?" atiende el producto, no solo el menu', async () => {
+  for (const t of ['hola, tienen el pirata?', 'Buenas tardes, busco el pirata', 'info del pirata']) {
+    const m = await texto(t);
+    assert.strictEqual(m.tipo, 'botones');
+    assert.match(m.cuerpo, /Figura Pirata Sombrero/, t);
+  }
+  assert.match((await texto('hola buenas tardes')).cuerpo, /Hola/);   // solo saludo: sigue el menu
+  assert.match((await texto('hola, como estas?')).cuerpo, /Hola/);
+});
+
+test('cierre ("ok gracias") se agradece, no se busca', async () => {
+  for (const t of ['ok gracias', 'Gracias!', 'muchas gracias', 'ok perfecto', 'de nada']) {
+    const m = await texto(t);
+    assert.strictEqual(m.tipo, 'texto', t);
+    assert.match(m.cuerpo, /Con gusto/);
+  }
+});
+
+test('"lo quiero" sin producto pregunta cual, en vez de decir que no encontro', async () => {
+  for (const t of ['si lo quiero', 'lo quiero', 'apartar', 'me interesa', 'lo aparto']) {
+    const m = await texto(t);
+    assert.strictEqual(m.tipo, 'botones', t);
+    assert.match(m.cuerpo, /Cuál pieza/);
+    assert.doesNotMatch(m.cuerpo, /No encontré/);
+    assert.deepStrictEqual(m.opciones.map((o) => o.id), ['buscar', 'persona']);
+    validarLimites(m);
+  }
+});
+
+test('"quiero apartar el pirata" va directo al producto', async () => {
+  const m = await texto('quiero apartar el pirata');
+  assert.match(m.cuerpo, /Figura Pirata Sombrero/);
+});
+
+test('mensaje sin nada que buscar invita a decir que busca, sin repetir la frase', async () => {
+  const m = await texto('cuanto cuesta');
+  assert.strictEqual(m.tipo, 'botones');
+  assert.match(m.cuerpo, /Dime qué buscas/);
+  assert.doesNotMatch(m.cuerpo, /No encontré/);
+});
+
+test('error de dedo en el nombre encuentra el producto', async () => {
+  const m = await texto('pirrata');
+  assert.match(m.cuerpo, /Figura Pirata Sombrero/);
+});
+
+test('"tarjetas" de coleccion no se confunden con pago con tarjeta', async () => {
+  assert.doesNotMatch((await texto('tienen tarjetas de pokemon')).cuerpo, /Mercado Pago/);
+  assert.match((await texto('puedo pagar con tarjeta?')).cuerpo, /Mercado Pago/);
+  assert.match((await texto('aceptan tarjeta de credito')).cuerpo, /Mercado Pago/);
 });

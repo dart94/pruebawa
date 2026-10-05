@@ -49,7 +49,9 @@
     "categoria_vacia": "Esa categoría ya no tiene productos disponibles 😕 ¿Buscamos otra cosa?",
     "producto_no_disponible": "Ese ya no está disponible 😕 ¿Buscamos otro?",
     "no_es_texto": "Recibí tu mensaje, pero no puedo ver imágenes ni audios 😅 Cuéntame en texto qué buscas o toca una opción.",
-    "dato_pendiente": "Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo."
+    "dato_pendiente": "Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo.",
+    "gracias": "¡Con gusto! Aquí sigo por si quieres ver algo más.",
+    "compra_sin_producto": "¿Cuál pieza te interesa? Dime el nombre o toca «Buscar producto»."
   },
   "aviso_tipos": {
     "persona": "Hablar con alguien",

@@ -144,23 +144,52 @@ const IGNORAR = new Set([
   'de', 'del', 'la', 'el', 'los', 'las', 'un', 'una', 'unos', 'unas', 'y', 'o', 'en', 'con', 'para', 'por', 'que',
   'me', 'mi', 'tu', 'tienes', 'tiene', 'tienen', 'hay', 'quiero', 'quisiera', 'busco', 'buscas', 'buscando',
   'cuanto', 'cuesta', 'cuestan', 'precio', 'precios', 'favor', 'algun', 'alguna', 'algo', 'si', 'disponible',
-  'disponibles', 'esta', 'estan', 'ver', 'saber', 'hola', 'buenas', 'buenos', 'dias', 'tardes', 'noches'
+  'disponibles', 'esta', 'estan', 'ver', 'saber', 'hola', 'buenas', 'buenos', 'dias', 'tardes', 'noches',
+  // relleno de conversacion e intencion de compra: no son parte del nombre de un producto
+  'lo', 'le', 'les', 'se', 'te', 'nos', 'al', 'es', 'ya', 'muy', 'mas', 'pues', 'porfa', 'porfavor',
+  'como', 'estas', 'tal', 'ok', 'okey', 'oki', 'okay', 'vale', 'listo', 'perfecto', 'excelente', 'genial',
+  'gracias', 'sip', 'apartar', 'aparto', 'apartas', 'aparta', 'apartalo', 'apartame', 'separar', 'separo',
+  'comprar', 'compro', 'llevo', 'llevar', 'pido', 'pedir', 'interesa', 'interesan'
 ]);
 const GENERICOS = new Set(['figura', 'sobre', 'tcg', 'accesorio', 'carta']);
+
+const singular = (t) => (t.length > 3 && t.endsWith('s') ? t.slice(0, -1) : t);   // plural simple
 
 function tokens(texto) {
   return normalizar(texto)
     .split(/[^a-z0-9]+/)
     .filter((t) => t.length > 1 && !IGNORAR.has(t))
-    .map((t) => (t.length > 3 && t.endsWith('s') ? t.slice(0, -1) : t));   // plural simple
+    .map(singular);
+}
+
+// Palabras de un producto, para comparar por palabra y no por subcadena ("ok" ya no coincide con "Pokemon")
+function palabras(texto) {
+  return normalizar(texto).split(/[^a-z0-9]+/).filter(Boolean).map(singular);
+}
+
+// true si la distancia de edicion entre a y b es como maximo 1 (una letra de mas, de menos o cambiada)
+function aUnaLetra(a, b) {
+  if (Math.abs(a.length - b.length) > 1) return false;
+  let i = 0;
+  while (i < a.length && i < b.length && a[i] === b[i]) i++;
+  if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1);
+  return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
+}
+
+// Un termino de la consulta coincide con una palabra del producto si es igual, es el inicio de ella
+// (nombre incompleto, 4+ letras) o difiere en una sola letra (error de dedo, 5+ letras: "gokku" -> "goku").
+function coincide(token, palabra) {
+  if (token === palabra) return true;
+  if (token.length >= 4 && palabra.startsWith(token)) return true;
+  return token.length >= 5 && palabra.length >= 4 && aUnaLetra(token, palabra);
 }
 
 function buscar(productos, consulta) {
   const ts = tokens(consulta);
   if (!ts.length) return { exactos: [], parecidos: [] };
   const puntuados = productos.map((p) => {
-    const heno = normalizar(`${p.categoria} ${p.producto} ${p.tema} ${p.linea}`);
-    const aciertos = ts.filter((t) => heno.includes(t));
+    const ws = palabras(`${p.categoria} ${p.producto} ${p.tema} ${p.linea}`);
+    const aciertos = ts.filter((t) => ws.some((w) => coincide(t, w)));
     return { p, aciertos };
   });
   const exactos = puntuados.filter((x) => x.aciertos.length === ts.length).map((x) => x.p);

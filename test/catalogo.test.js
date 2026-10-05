@@ -62,3 +62,29 @@ test('listar limita resultados y no expone campos internos', () => {
   assert.match(texto, /Y 3 mas/);
   assert.doesNotMatch(texto, /costo|margen|proveedor/i);
 });
+
+test('busca por palabra completa: "ok" ya no coincide con la mitad de "Pokemon"', () => {
+  assert.deepStrictEqual(buscar(productos, 'ok'), { exactos: [], parecidos: [] });
+  assert.deepStrictEqual(buscar(productos, 'ok gracias'), { exactos: [], parecidos: [] });
+  assert.strictEqual(buscar(productos, 'kemon').exactos.length, 0);   // mitad de palabra no cuenta
+});
+
+test('nombre incompleto (inicio de palabra, 4+ letras) y errores de dedo de una letra', () => {
+  assert.deepStrictEqual(buscar(productos, 'gogeta').exactos.map((p) => p.id), ['F01']);
+  assert.deepStrictEqual(buscar(productos, 'gogetta').exactos.map((p) => p.id), ['F01']);   // letra de mas
+  assert.deepStrictEqual(buscar(productos, 'todorki').exactos.map((p) => p.id), ['F02']);   // letra de menos
+  assert.deepStrictEqual(buscar(productos, 'todoroku').exactos.map((p) => p.id), ['F02']);  // letra cambiada
+  assert.deepStrictEqual(buscar(productos, 'pokem').exactos.map((p) => p.id), ['P01', 'P02']);   // inicio de palabra
+});
+
+test('los errores de dedo no se aplican a palabras cortas ni a dos letras de diferencia', () => {
+  assert.strictEqual(buscar(productos, 'goku').exactos.length, 0);
+  assert.strictEqual(buscar(productos, 'todoroki shota rey').exactos.length, 0);
+  assert.strictEqual(buscar(productos, 'gtgetta').exactos.length, 0);   // dos letras de diferencia
+});
+
+test('verbos de compra y relleno no cuentan como parte del nombre', () => {
+  assert.deepStrictEqual(buscar(productos, 'quiero apartar el gogeta').exactos.map((p) => p.id), ['F01']);
+  assert.deepStrictEqual(buscar(productos, 'me interesa el todoroki, lo llevo').exactos.map((p) => p.id), ['F02']);
+  assert.deepStrictEqual(buscar(productos, 'si lo quiero'), { exactos: [], parecidos: [] });
+});

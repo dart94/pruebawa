@@ -55,7 +55,14 @@
     "categoria_vacia": "Esa categoría ya no tiene productos disponibles 😕 ¿Buscamos otra cosa?",
     "producto_no_disponible": "Ese ya no está disponible 😕 ¿Buscamos otro?",
     "no_es_texto": "Recibí tu mensaje, pero no puedo ver imágenes ni audios 😅 Cuéntame en texto qué buscas o toca una opción.",
-    "dato_pendiente": "Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo."
+    "dato_pendiente": "Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo.",
+    "horario": "Atendemos de 8:00 a. m. a 8:00 p. m., todos los días, también fines de semana 🕗 (hora de Sonora).",
+    "ubicacion": "Somos tienda en línea 💻 No tenemos local físico: atendemos por mensajes desde Hermosillo, Sonora, y enviamos a todo México 📦",
+    "envios": "Sí hacemos envíos a todo México 📦 La paquetería depende de tu localidad y el costo del envío va aparte, a cargo del cliente. Para saber cuánto sería a tu ciudad, toca «Hablar con alguien».",
+    "pagos": "Aceptamos transferencia, depósito y Mercado Pago 💳",
+    "apartado": "Apartamos con el 50% del precio 🙌 La pieza se guarda 14 días y, si ya no la quieres, se te reembolsa. El envío se paga aparte. Las cartas sueltas no se apartan: se pagan completas. Sujeto a confirmación del equipo.",
+    "gracias": "¡Con gusto! 🙌 Aquí sigo por si quieres ver algo más.",
+    "compra_sin_producto": "¡Va! 🙌 ¿Cuál pieza te interesa? Dime el nombre o toca «Buscar producto» para verla."
   },
 
   "aviso_tipos": {

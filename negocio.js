@@ -10,8 +10,11 @@ const TEXTOS = {
   saludo: [], pie_menu: [], pie_confirmacion: [], pregunta_categoria: [],
   categoria_encontrados: ['n', 'categoria'], busqueda_encontrados: ['n'], parecidos: [],
   sin_resultados: ['consulta'], ficha_pie: [], interes: ['producto'], persona: [], escribir: [],
-  sin_catalogo: [], categoria_vacia: [], producto_no_disponible: [], no_es_texto: [], dato_pendiente: []
+  sin_catalogo: [], categoria_vacia: [], producto_no_disponible: [], no_es_texto: [], dato_pendiente: [],
+  gracias: [], compra_sin_producto: []
 };
+// Respuestas fijas a preguntas frecuentes. Opcionales: si un negocio no define una, el bot usa textos.dato_pendiente.
+const FAQ = ['horario', 'ubicacion', 'envios', 'pagos', 'apartado'];
 const BOTONES = { buscar: 20, buscar_otro: 20, persona: 20, menu: 20, me_interesa: 20 };   // maximo de caracteres (Meta)
 const LISTAS = {
   boton_categorias: ['', 20], seccion_categorias: ['', 24], boton_productos: ['', 20], seccion_productos: ['', 24],
@@ -49,6 +52,7 @@ function validar(cfg) {
   for (const [k, vars] of Object.entries(TEXTOS)) {
     texto(`textos.${k}`, (cfg.textos || {})[k], vars, k.startsWith('pie_') ? 60 : 1024);
   }
+  for (const k of FAQ) if ((cfg.textos || {})[k] !== undefined) texto(`textos.${k}`, cfg.textos[k], [], 1024);
   for (const k of ['persona', 'interes']) texto(`aviso_tipos.${k}`, (cfg.aviso_tipos || {})[k], [], 60);
   return errores;
 }

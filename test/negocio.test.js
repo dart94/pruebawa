@@ -78,3 +78,12 @@ test('un negocio con configuracion invalida no arranca', () => {
     }), (e) => /Configuracion del negocio invalida/.test(String(e.stderr)));
   } finally { fs.unlinkSync(tmp); }
 });
+
+test('respuestas frecuentes opcionales: si existen se validan; si faltan no es error', () => {
+  const sin = base();
+  for (const k of ['horario', 'ubicacion', 'envios', 'pagos', 'apartado']) delete sin.textos[k];
+  assert.deepStrictEqual(validar(sin), []);
+  const vacia = base();
+  vacia.textos.horario = '  ';
+  assert.match(validar(vacia).join('\n'), /textos\.horario/);
+});
