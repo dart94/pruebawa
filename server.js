@@ -46,6 +46,9 @@ const IG_APP_SECRET  = process.env.IG_APP_SECRET || '';   // solo si la app de I
 const IG_PERMITIDOS  = (process.env.IG_PERMITIDOS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const VERSION        = process.env.API_VERSION || 'v26.0';
 const API            = `https://graph.facebook.com/${VERSION}`;
+// Con un token de Instagram Business Login el envio va por graph.instagram.com (ej. https://graph.instagram.com/v26.0).
+// Si no se define, se usa la API de Facebook (token de Pagina).
+const IG_API_BASE    = (process.env.IG_API_BASE || API).replace(/\/+$/, '');
 const PRODUCCION     = process.env.NODE_ENV === 'production';
 const DRY_RUN        = process.env.DRY_RUN === '1';   // no llama a Meta, solo registra
 const LOG_CONTENIDO  = process.env.LOG_CONTENIDO === '1'; // por defecto no se registra texto ni nombres de clientes
@@ -112,7 +115,7 @@ async function enviar(para, msg) {
 
 // Envia un mensaje por Instagram. Si Meta rechaza las respuestas rapidas, reintenta como texto plano.
 async function llamarInstagram(para, mensaje) {
-  return fetch(`${API}/${IG_USER_ID}/messages`, {
+  return fetch(`${IG_API_BASE}/${IG_USER_ID}/messages`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${IG_TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ recipient: { id: para }, message: mensaje })
