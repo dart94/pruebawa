@@ -27,9 +27,12 @@ function mensajeIG(msg) {
     return { text: truncar(msg.cuerpo + pie, LIM.texto), quick_replies: respuestasRapidas(msg.opciones) };
   }
   // lista: el texto con todo el detalle (titulo completo y descripcion); los botones llevan el titulo corto
+  // En WhatsApp la lista se abre con un boton ("Ver productos"); en Instagram ese boton no existe y las filas salen como
+  // respuestas rapidas, asi que el texto que lo menciona se ajusta.
+  const cuerpo = msg.cuerpo.split(`«${msg.etiquetaBoton}»`).join('un botón de abajo');
   const filas = msg.filas.map((f, i) => `${i + 1}. ${f.titulo}${f.descripcion ? ' - ' + f.descripcion : ''}`);
   return {
-    text: truncar(`${msg.cuerpo}\n\n${filas.join('\n')}${pie}`, LIM.texto),
+    text: truncar(`${cuerpo}\n\n${filas.join('\n')}${pie}`, LIM.texto),
     quick_replies: respuestasRapidas(msg.filas)
   };
 }

@@ -60,8 +60,43 @@ test('un mensaje con producto o pregunta nueva manda sobre lo recordado', async 
   assert.match((await c.texto('a que hora abren')).cuerpo, /8:00 a\. m\./);   // las preguntas frecuentes siguen primero
 });
 
-test('si no habia un solo producto (lista o categoria), no se adivina cual', async () => {
+test('despues de ver una lista, "cuanto cuesta" la vuelve a mostrar con precios en vez de preguntar que busca', async () => {
   const c = como('mem-6');
-  await c.sel('cat:tcg');   // lista de varios
+  const lista = await c.texto('sobres');   // varios resultados -> lista
+  assert.strictEqual(lista.tipo, 'lista');
+  for (const t of ['cuanto cuesta', 'y el precio?', 'cuanto sale']) {
+    const m = await c.texto(t);
+    assert.strictEqual(m.tipo, 'lista', t);
+    assert.match(m.cuerpo, /precios/);
+    assert.deepStrictEqual(m.filas.map((f) => f.id), lista.filas.map((f) => f.id));
+    assert.ok(m.filas.every((f) => /\$\d+ MXN/.test(f.descripcion)));
+  }
+});
+
+test('despues de ver una lista, "lo quiero" pregunta cual de esos, sin adivinar', async () => {
+  const c = como('mem-7');
+  await c.sel('cat:tcg');   // categoria = lista de varios
+  for (const t of ['lo quiero', 'si']) {
+    const m = await c.texto(t);
+    assert.strictEqual(m.tipo, 'lista', t);
+    assert.match(m.cuerpo, /Cuál de estos/);
+    assert.deepStrictEqual(m.filas.map((f) => f.id), ['prod:D04', 'prod:D05']);
+  }
+});
+
+test('lo ultimo que vio manda: lista -> producto -> lista', async () => {
+  const c = como('mem-8');
+  await c.texto('sobres');
+  await c.sel('prod:D04');   // eligio uno de la lista
+  assert.match((await c.texto('lo quiero')).cuerpo, /Te refieres a \*Set Demo Uno\*/);
+  await c.sel('cat:figura');   // vuelve a ver una lista
+  assert.strictEqual((await c.texto('cuanto cuesta')).tipo, 'lista');
+});
+
+test('sin nada reciente (o con otro cliente) sigue sin adivinar', async () => {
+  const c = como('mem-9');
   assert.match((await c.texto('lo quiero')).cuerpo, /Cuál pieza/);
+  assert.match((await c.texto('cuanto cuesta')).cuerpo, /Dime qué buscas/);
+  await como('mem-10').texto('sobres');   // otro cliente vio una lista
+  assert.match((await c.texto('cuanto cuesta')).cuerpo, /Dime qué buscas/);
 });

@@ -67,7 +67,9 @@
     "apartado": "Apartamos con el 50% del precio 🙌 La pieza se guarda 14 días y, si ya no la quieres, se te reembolsa. El envío se paga aparte. Las cartas sueltas no se apartan: se pagan completas. Sujeto a confirmación del equipo.",
     "gracias": "¡Con gusto! 🙌 Aquí sigo por si quieres ver algo más.",
     "compra_sin_producto": "¡Va! 🙌 ¿Cuál pieza te interesa? Dime el nombre o toca «Buscar producto» para verla.",
-    "confirmar_producto": "¡Va! 🙌 ¿Te refieres a *{producto}*? 💰 ${precio} {moneda}"
+    "confirmar_producto": "¡Va! 🙌 ¿Te refieres a *{producto}*? 💰 ${precio} {moneda}",
+    "precios_lista": "¡Aquí tienes los precios! 👇 Toca «Ver productos» para ver cada uno.",
+    "elegir_de_lista": "¡Va! 🙌 ¿Cuál de estos te interesa? 👇 Toca «Ver productos» y elige uno."
   },
 
   "aviso_tipos": {

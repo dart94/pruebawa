@@ -112,9 +112,16 @@ function recordarProducto(entrada, producto, alm = almacen()) {
   alm.guardar(`prod:${claveCliente(entrada)}`, { id: producto.id }, VIGENCIA_PRODUCTO_MS);
 }
 
+// Lista de varios productos que acaba de ver (ids). Reemplaza al producto recordado: manda lo ultimo que vio.
+function recordarLista(entrada, productos, alm = almacen()) {
+  if (!entrada || !entrada.de || !productos.length) return;
+  alm.guardar(`prod:${claveCliente(entrada)}`, { ids: productos.slice(0, 10).map((p) => p.id) }, VIGENCIA_PRODUCTO_MS);
+}
+
+// Devuelve { id } (un producto) o { ids } (una lista), o undefined si no hay nada reciente
 function productoReciente(entrada, alm = almacen()) {
   if (!entrada || !entrada.de) return undefined;
   return alm.obtener(`prod:${claveCliente(entrada)}`);
 }
 
-module.exports = { crearAlmacen, almacen, claveCliente, recordarProducto, productoReciente };
+module.exports = { crearAlmacen, almacen, claveCliente, recordarProducto, recordarLista, productoReciente };

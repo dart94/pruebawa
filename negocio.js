@@ -11,7 +11,7 @@ const TEXTOS = {
   categoria_encontrados: ['n', 'categoria'], busqueda_encontrados: ['n'], parecidos: [],
   sin_resultados: ['consulta'], ficha_pie: [], interes: ['producto', 'anticipo', 'porcentaje', 'moneda'], persona: [], escribir: [],
   sin_catalogo: [], categoria_vacia: [], producto_no_disponible: [], no_es_texto: [], dato_pendiente: [],
-  gracias: [], compra_sin_producto: [], confirmar_producto: ['producto', 'precio', 'moneda']
+  gracias: [], compra_sin_producto: [], confirmar_producto: ['producto', 'precio', 'moneda'], precios_lista: [], elegir_de_lista: []
 };
 // Respuestas fijas a preguntas frecuentes. Opcionales: si un negocio no define una, el bot usa textos.dato_pendiente.
 const FAQ = ['horario', 'ubicacion', 'envios', 'pagos', 'apartado'];

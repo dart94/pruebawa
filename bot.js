@@ -5,7 +5,7 @@
 
 const { obtenerCatalogo, buscar, normalizar, tokens } = require('./catalogo');
 const { texto, botones, lista } = require('./mensajes');
-const { recordarProducto, productoReciente } = require('./estado');
+const { recordarProducto, recordarLista, productoReciente } = require('./estado');
 const { negocio, fmt } = require('./negocio');
 
 const T = negocio.textos;
@@ -114,8 +114,14 @@ async function resultadosDeBusqueda(entrada, productos) {
     recordarProducto(entrada, exactos[0]);   // para que "lo quiero" o "cuanto cuesta" sepan de que hablan
     return detalle(exactos[0]);
   }
-  if (exactos.length) return listaProductos(fmt(T.busqueda_encontrados, { n: exactos.length }), exactos);
-  if (parecidos.length) return listaProductos(T.parecidos, parecidos);
+  if (exactos.length) {
+    recordarLista(entrada, exactos);
+    return listaProductos(fmt(T.busqueda_encontrados, { n: exactos.length }), exactos);
+  }
+  if (parecidos.length) {
+    recordarLista(entrada, parecidos);
+    return listaProductos(T.parecidos, parecidos);
+  }
   return botones(fmt(T.sin_resultados, { consulta: limpia }), [BTN.buscarOtro, BTN.persona]);
 }
 
@@ -178,6 +184,7 @@ async function responder(entrada) {
       const cat = id.slice(4);
       const delaCategoria = productos.filter((p) => normalizar(p.categoria) === cat);
       if (!delaCategoria.length) return botones(T.categoria_vacia, [BTN.buscarOtro, BTN.persona]);
+      recordarLista(entrada, delaCategoria);
       return listaProductos(
         fmt(T.categoria_encontrados, { n: delaCategoria.length, categoria: etiquetaCategoria(delaCategoria[0].categoria) }),
         delaCategoria
@@ -220,6 +227,10 @@ async function responder(entrada) {
     const reciente = productoReciente(entrada);
     if (reciente && (COMPRA.test(t) || PRECIO.test(t) || AFIRMA.test(palabras.join(' ')))) {
       const productos = await obtenerCatalogo();   // precio y stock se leen de nuevo, no se recuerdan
+      if (reciente.ids && productos) {   // venian viendo una lista: se vuelve a mostrar, con sus precios
+        const enLista = productos.filter((x) => reciente.ids.includes(x.id));
+        if (enLista.length) return listaProductos(PRECIO.test(t) ? T.precios_lista : T.elegir_de_lista, enLista);
+      }
       const p = productos && productos.find((x) => x.id === reciente.id);
       if (p && PRECIO.test(t)) return detalle(p);
       if (p) {

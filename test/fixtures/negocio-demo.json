@@ -53,7 +53,9 @@
     "dato_pendiente": "Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo.",
     "gracias": "¡Con gusto! Aquí sigo por si quieres ver algo más.",
     "compra_sin_producto": "¿Cuál pieza te interesa? Dime el nombre o toca «Buscar producto».",
-    "confirmar_producto": "¿Te refieres a *{producto}*? ${precio} {moneda}"
+    "confirmar_producto": "¿Te refieres a *{producto}*? ${precio} {moneda}",
+    "precios_lista": "Aquí tienes los precios. Toca «Ver productos».",
+    "elegir_de_lista": "¿Cuál de estos te interesa? Toca «Ver productos»."
   },
   "aviso_tipos": {
     "persona": "Hablar con alguien",

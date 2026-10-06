@@ -116,3 +116,14 @@ test('webhook: que mando el cliente cuando no es texto, y el registro solo lleva
   assert.doesNotMatch(caso({ attachments: [{ type: 'image', payload: { url: 'https://secreto/foto' } }] }).detalle, /secreto/);
   assert.match(caso({ is_unsupported: true }).detalle, /adjuntos=ninguno/);
 });
+
+test('lista en instagram: el texto no manda a tocar un boton de lista que alli no existe', () => {
+  const m = mensajeIG(lista('Encontré 2 🙌 Toca «Ver productos» y elige uno.', 'Ver productos', [
+    { id: 'prod:1', titulo: 'Gogeta', descripcion: '$550 MXN' },
+    { id: 'prod:2', titulo: 'Goku', descripcion: '$450 MXN' }
+  ]));
+  assert.doesNotMatch(m.text, /Ver productos/);
+  assert.match(m.text, /Toca un botón de abajo y elige uno\./);
+  assert.match(m.text, /1\. Gogeta - \$550 MXN/);
+  assert.deepStrictEqual(m.quick_replies.map((q) => q.title), ['Gogeta', 'Goku']);
+});
