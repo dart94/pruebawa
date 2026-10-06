@@ -341,11 +341,12 @@ const servidor = http.createServer((req, res) => {
           try {
             const detalle = LOG_CONTENIDO && ev.entrada.tipo === 'texto' ? `: ${ev.entrada.texto}` : '';
             console.log(`[entrante-ig] ${enmascarar(ev.de)} tipo ${ev.entrada.tipo}${detalle}`);
-            await enviarInstagram(ev.de, await responder(ev.entrada));
-            if (pausaIG.activa && ev.entrada.tipo === 'seleccion' && ev.entrada.id === 'persona') {
+            const respuesta = await responder(ev.entrada);
+            await enviarInstagram(ev.de, respuesta);
+            if (pausaIG.activa && respuesta.pausar) {
               // Pidio hablar con alguien: el bot deja de intervenir con este cliente para no estorbar al dueno
               pausaIG.pausar(ev.de);
-              console.log(`[ig-pausa] ${enmascarar(ev.de)} pidio hablar con alguien: bot en pausa ${IG_PAUSA_HORAS} h con este cliente`);
+              console.log(`[ig-pausa] ${enmascarar(ev.de)} pidio atencion del dueno (hablar con alguien o su pedido): bot en pausa ${IG_PAUSA_HORAS} h con este cliente`);
             }
           } catch (e) {
             console.log(`[error-ig] mensaje ${ev.id}: ${e.message}`);

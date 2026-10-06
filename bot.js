@@ -141,6 +141,8 @@ const COMPRA = /\b(quiero|apart\w*|compr\w*|llev\w*|separ\w*|pido|pedir|interesa
 // Preguntas frecuentes con respuesta fija en negocio.json (textos.<clave>); si el negocio no la define, se usa dato_pendiente.
 // Van en este orden y tienen prioridad sobre la busqueda de productos.
 const FAQ = [
+  // Un "pedido" es algo ya pagado: el bot no lo consulta, avisa al dueno y se calla con ese cliente mientras lo atiende
+  ['pedido', /\b(mi pedido|mis pedidos|mi compra|mis compras|estatus de|estado de mi (pedido|compra)|ya pague|ya pagamos|ya deposite|ya transferi|ya hice (el |la |mi )?(pago|deposito|transferencia))\b/],
   ['apartado', /\b(como (se )?apart\w*|se puede apartar|apartado|anticipo|enganche|separan)\b/],
   ['pagos', /\b(pagos?|pagar|pagan|transferencia|deposito|mercado ?pago|con tarjeta|tarjetas? de (credito|debito)|efectivo|oxxo|contra ?entrega)\b/],
   ['envios', /\b(envios?|enviar|enviamos|envian|envias|mandan|mandas|mandar|paqueterias?|domicilio|rastreo)\b/],
@@ -172,7 +174,7 @@ async function responder(entrada) {
     if (id === 'persona') {
       console.log('[persona] el cliente pidio hablar con alguien');
       aviso({ tipo: 'persona', cliente: entrada.de, ...canalDe(entrada) });
-      return botones(fmt(T.persona), [BTN.menu]);
+      return { ...botones(fmt(T.persona), [BTN.menu]), pausar: true };   // pausar: el bot se calla con este cliente (server.js)
     }
     if (id === 'escribir') return texto(T.escribir);
 
@@ -220,7 +222,11 @@ async function responder(entrada) {
   const faq = FAQ.find(([, patron]) => patron.test(t));
   if (faq) {
     console.log(`[faq] ${faq[0]}`);
-    return botones(T[faq[0]] || T.dato_pendiente, [BTN.persona, BTN.buscar]);
+    if (faq[0] === 'pedido' && T.pedido) {
+      aviso({ tipo: 'persona', producto: 'Consulta de pedido', cliente: entrada.de, ...canalDe(entrada) });
+      return { ...botones(fmt(T.pedido), [BTN.menu]), pausar: true };
+    }
+    return botones(fmt(T[faq[0]] || T.dato_pendiente), [BTN.persona, BTN.buscar]);
   }
   if (!tokens(entrada.texto).length) {   // nada que buscar: "sí lo quiero", "cuanto cuesta"...
     // Si venian viendo un producto (hasta 24 h), se entiende de cual hablan

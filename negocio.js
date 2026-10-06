@@ -14,7 +14,7 @@ const TEXTOS = {
   gracias: [], compra_sin_producto: [], confirmar_producto: ['producto', 'precio', 'moneda'], precios_lista: [], elegir_de_lista: []
 };
 // Respuestas fijas a preguntas frecuentes. Opcionales: si un negocio no define una, el bot usa textos.dato_pendiente.
-const FAQ = ['horario', 'ubicacion', 'envios', 'pagos', 'apartado'];
+const FAQ = ['horario', 'ubicacion', 'envios', 'pagos', 'apartado', 'pedido'];
 const BOTONES = { buscar: 20, buscar_otro: 20, persona: 20, menu: 20, me_interesa: 20, si_ese: 20 };   // maximo de caracteres (Meta)
 const LISTAS = {
   boton_categorias: ['', 20], seccion_categorias: ['', 24], boton_productos: ['', 20], seccion_productos: ['', 24],
