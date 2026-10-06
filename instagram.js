@@ -60,6 +60,24 @@ function resumenWebhook(datos) {
   return `${datos.object || 'sin object'} ${partes.join(' ') || 'sin entradas'}`;
 }
 
+// Que mando el cliente cuando no es texto, en palabras para el dueno. Los nombres de tipo salen de la documentacion y de
+// terceros: NO verificados con trafico real; lo desconocido cae en "mensaje no compatible" (y se registra el tipo crudo).
+const ADJUNTOS = {
+  image: 'foto', audio: 'audio', video: 'video', file: 'archivo', share: 'publicación compartida',
+  ig_post: 'publicación compartida', ig_reel: 'reel', reel: 'reel', story: 'historia', story_mention: 'historia'
+};
+
+function descripcionAdjunto(m) {
+  const tipo = ((m.attachments || [])[0] || {}).type;
+  return ADJUNTOS[tipo] || 'mensaje no compatible';
+}
+
+// Solo tipos y nombres de claves (nunca contenido ni enlaces) para aprender el formato real en el log
+function detalleOtro(m) {
+  const tipos = (m.attachments || []).map((a) => (a && a.type) || '?').join(',');
+  return `adjuntos=${tipos || 'ninguno'} claves=${Object.keys(m).join(',')}`;
+}
+
 function eventosDeWebhook(datos) {
   const eventos = [];
   if (!datos || datos.object !== 'instagram') return eventos;
@@ -79,7 +97,10 @@ function eventosDeWebhook(datos) {
         } else if (typeof m.text === 'string' && m.text) {
           eventos.push({ id: m.mid, de, eco: false, entrada: { tipo: 'texto', texto: m.text, de, canal: 'instagram' } });
         } else {
-          eventos.push({ id: m.mid, de, eco: false, entrada: { tipo: 'otro', de, canal: 'instagram' } });   // fotos, reels, stickers...
+          eventos.push({   // fotos, audios, reels, shares, stickers...
+            id: m.mid, de, eco: false, detalle: detalleOtro(m),
+            entrada: { tipo: 'otro', adjunto: descripcionAdjunto(m), de, canal: 'instagram' }
+          });
         }
       } else if (ev.postback && ev.postback.payload) {
         eventos.push({ id: ev.postback.mid, de, eco: false, entrada: { tipo: 'seleccion', id: ev.postback.payload, de, canal: 'instagram' } });

@@ -13,6 +13,8 @@ const T = negocio.textos;
 let avisar = async () => {};
 function alAvisar(fn) { avisar = fn; }
 function aviso(evento) {   // sin await: el aviso no retrasa ni rompe la respuesta al cliente
+  // En Instagram el dueno ve la conversacion completa en la bandeja de la app: no se avisa por WhatsApp (que ademas cuesta)
+  if (evento.canal === 'instagram') return;
   Promise.resolve().then(() => avisar(evento)).catch((e) => console.log(`[aviso-error] ${e.message}`));
 }
 
@@ -134,7 +136,10 @@ const FAQ = [
 ];
 
 async function responder(entrada) {
-  if (entrada.tipo === 'otro') return botones(T.no_es_texto, [BTN.buscar, BTN.persona]);
+  if (entrada.tipo === 'otro') {   // foto, audio, publicacion...: el bot no lo entiende, asi que se avisa al dueno
+    aviso({ tipo: 'adjunto', producto: entrada.adjunto || 'mensaje no compatible', cliente: entrada.de, ...canalDe(entrada) });
+    return botones(T.no_es_texto, [BTN.buscar, BTN.persona]);
+  }
 
   // Clics de botones y listas: llegan con un id estable
   if (entrada.tipo === 'seleccion') {

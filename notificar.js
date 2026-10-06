@@ -10,7 +10,7 @@
 
 const { negocio } = require('./negocio');
 
-const TIPOS = negocio.aviso_tipos;   // etiqueta del tipo de aviso que ve el dueno
+const TIPOS = { adjunto: 'Mandó un archivo', ...negocio.aviso_tipos };   // etiqueta del tipo de aviso que ve el dueno
 const ANTIREPETIR_MS = 10 * 60 * 1000;   // el mismo cliente + tipo + producto no vuelve a avisar en 10 min
 const recientes = new Map();
 let avisoConfigFaltante = false;

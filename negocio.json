@@ -54,7 +54,7 @@
     "sin_catalogo": "Uy, ahorita no puedo consultar el inventario 😅 Puedes dejar tu solicitud al equipo.",
     "categoria_vacia": "Esa categoría ya no tiene productos disponibles 😕 ¿Buscamos otra cosa?",
     "producto_no_disponible": "Ese ya no está disponible 😕 ¿Buscamos otro?",
-    "no_es_texto": "Recibí tu mensaje, pero no puedo ver imágenes ni audios 😅 Cuéntame en texto qué buscas o toca una opción.",
+    "no_es_texto": "Recibí tu mensaje 🙌 Por aquí no puedo ver fotos ni audios, pero le aviso al equipo para que lo revise. Si buscas algo, cuéntame en texto qué es o toca una opción.",
     "dato_pendiente": "Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo.",
     "horario": "Atendemos de 8:00 a. m. a 8:00 p. m., todos los días, también fines de semana 🕗 (hora de Sonora).",
     "ubicacion": "Somos tienda en línea 💻 No tenemos local físico: atendemos por mensajes desde Hermosillo, Sonora, y enviamos a todo México 📦",
@@ -67,6 +67,7 @@
 
   "aviso_tipos": {
     "persona": "Hablar con alguien",
-    "interes": "Me interesa"
+    "interes": "Me interesa",
+    "adjunto": "Mandó foto, audio o publicación"
   }
 }

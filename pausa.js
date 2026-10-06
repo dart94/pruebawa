@@ -38,6 +38,11 @@ function crearPausa({ duracionMs, ventanaBotMs = 10000, ahora = Date.now, max = 
       recortar(pausadoHasta);
     },
 
+    // El cliente volvio al bot a proposito (toco "Volver al menu"): se levanta la pausa
+    reanudar(cliente) {
+      pausadoHasta.delete(String(cliente));
+    },
+
     estaPausado(cliente) {
       const hasta = pausadoHasta.get(String(cliente));
       if (hasta === undefined) return false;

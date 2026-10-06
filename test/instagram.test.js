@@ -102,3 +102,17 @@ test('webhook: objetos que no son de instagram o vacios no dan eventos ni lanzan
   assert.deepStrictEqual(eventosDeWebhook(null), []);
   assert.deepStrictEqual(eventosDeWebhook({ object: 'instagram' }), []);
 });
+
+test('webhook: que mando el cliente cuando no es texto, y el registro solo lleva tipos y claves', () => {
+  const caso = (message) => eventosDeWebhook(webhook([{ sender: { id: 'C1' }, message: { mid: 'x', ...message } }]))[0];
+  assert.strictEqual(caso({ attachments: [{ type: 'image', payload: { url: 'https://secreto/foto' } }] }).entrada.adjunto, 'foto');
+  assert.strictEqual(caso({ attachments: [{ type: 'audio' }] }).entrada.adjunto, 'audio');
+  assert.strictEqual(caso({ attachments: [{ type: 'share' }] }).entrada.adjunto, 'publicación compartida');
+  assert.strictEqual(caso({ attachments: [{ type: 'ig_reel' }] }).entrada.adjunto, 'reel');
+  assert.strictEqual(caso({ attachments: [{ type: 'story_mention' }] }).entrada.adjunto, 'historia');
+  const raro = caso({ attachments: [{ type: 'algo_nuevo' }] });
+  assert.strictEqual(raro.entrada.adjunto, 'mensaje no compatible');
+  assert.strictEqual(raro.detalle, 'adjuntos=algo_nuevo claves=mid,attachments');
+  assert.doesNotMatch(caso({ attachments: [{ type: 'image', payload: { url: 'https://secreto/foto' } }] }).detalle, /secreto/);
+  assert.match(caso({ is_unsupported: true }).detalle, /adjuntos=ninguno/);
+});

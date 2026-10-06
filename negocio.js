@@ -53,6 +53,7 @@ function validar(cfg) {
     texto(`textos.${k}`, (cfg.textos || {})[k], vars, k.startsWith('pie_') ? 60 : 1024);
   }
   for (const k of FAQ) if ((cfg.textos || {})[k] !== undefined) texto(`textos.${k}`, cfg.textos[k], [], 1024);
+  if ((cfg.aviso_tipos || {}).adjunto !== undefined) texto('aviso_tipos.adjunto', cfg.aviso_tipos.adjunto, [], 60);
   for (const k of ['persona', 'interes']) texto(`aviso_tipos.${k}`, (cfg.aviso_tipos || {})[k], [], 60);
   return errores;
 }

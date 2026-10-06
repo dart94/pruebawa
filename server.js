@@ -166,6 +166,7 @@ async function enviarPayload(cuerpo) {
   console.log(res.ok ? `[aviso-dueno] ${res.status} enviado` : `[aviso-dueno-error] ${res.status} ${await res.text()}`);
   return res.ok;
 }
+
 alAvisar((evento) => avisarDueno(evento, enviarPayload));
 
 // Para /health: comprueba que el token siga valido consultando el numero en la API (cache de 5 min).
@@ -209,13 +210,17 @@ async function marcarLeido(idMensaje) {
 }
 
 // Convierte un mensaje entrante de Meta en la entrada que entiende el bot
+const ADJUNTOS_WA = {
+  image: 'foto', audio: 'audio', video: 'video', document: 'archivo', sticker: 'sticker', location: 'ubicación', contacts: 'contacto'
+};
+
 function entradaDe(mensaje) {
   if (mensaje.type === 'text') return { tipo: 'texto', texto: mensaje.text.body, de: mensaje.from };
   if (mensaje.type === 'interactive') {
     const r = mensaje.interactive.button_reply || mensaje.interactive.list_reply;
     if (r) return { tipo: 'seleccion', id: r.id, de: mensaje.from };
   }
-  return { tipo: 'otro', de: mensaje.from };
+  return { tipo: 'otro', adjunto: ADJUNTOS_WA[mensaje.type] || 'mensaje no compatible', de: mensaje.from };
 }
 
 // ---------- Firma de Meta ----------
@@ -318,14 +323,29 @@ const servidor = http.createServer((req, res) => {
             console.log(`[ig-ignorado] ${enmascarar(ev.de)} no esta en IG_PERMITIDOS`);
             continue;
           }
+          if (ev.entrada.tipo === 'seleccion' && ev.entrada.id === 'menu' && pausaIG.estaPausado(ev.de)) {
+            pausaIG.reanudar(ev.de);   // tocar "Volver al menu" es pedir el bot a proposito
+            console.log(`[ig-pausa] ${enmascarar(ev.de)} volvio al menu: se levanta la pausa`);
+          }
           if (pausaIG.estaPausado(ev.de)) {
             console.log(`[ig-pausa] ${enmascarar(ev.de)} en pausa (el dueno esta atendiendo), el bot no responde`);
+            continue;
+          }
+          if (ev.entrada.tipo === 'otro') {
+            // Fotos, reels, publicaciones, audios...: el dueno los ve completos en la app de Instagram, asi que el bot no
+            // contesta ni avisa. Solo se registran tipos y claves (sin contenido) para conocer el formato real.
+            console.log(`[ig-otro] ${enmascarar(ev.de)} ${ev.detalle}: el bot no responde, lo atiende el dueno`);
             continue;
           }
           try {
             const detalle = LOG_CONTENIDO && ev.entrada.tipo === 'texto' ? `: ${ev.entrada.texto}` : '';
             console.log(`[entrante-ig] ${enmascarar(ev.de)} tipo ${ev.entrada.tipo}${detalle}`);
             await enviarInstagram(ev.de, await responder(ev.entrada));
+            if (pausaIG.activa && ev.entrada.tipo === 'seleccion' && ev.entrada.id === 'persona') {
+              // Pidio hablar con alguien: el bot deja de intervenir con este cliente para no estorbar al dueno
+              pausaIG.pausar(ev.de);
+              console.log(`[ig-pausa] ${enmascarar(ev.de)} pidio hablar con alguien: bot en pausa ${IG_PAUSA_HORAS} h con este cliente`);
+            }
           } catch (e) {
             console.log(`[error-ig] mensaje ${ev.id}: ${e.message}`);
           }

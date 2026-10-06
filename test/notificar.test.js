@@ -60,3 +60,9 @@ test('un fallo del envio no lanza error', async () => {
   assert.strictEqual(ok, false);
   delete process.env.DUENO_WHATSAPP;
 });
+
+test('aviso de adjunto: tipo y lo que mando, para fotos, audios y publicaciones', () => {
+  const p = payloadAviso({ tipo: 'adjunto', producto: 'foto', cliente: '5216621112222' }, CFG);
+  assert.deepStrictEqual(p.template.components[0].parameters.map((x) => x.text),
+    ['Mandó foto, audio o publicación', 'foto', '+5216621112222']);
+});

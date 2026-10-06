@@ -167,15 +167,16 @@ test('mas de 10 resultados: 9 productos + fila para afinar', async () => {
   validarLimites(m);
 });
 
-test('desde instagram el aviso al dueno lleva el canal', async () => {
+test('desde instagram no se avisa al dueno por WhatsApp (el ve los DMs en la app), pero el cliente si recibe respuesta', async () => {
   const { alAvisar } = require('../bot');
   const eventos = [];
   alAvisar(async (e) => { eventos.push(e); });
-  await responder({ tipo: 'seleccion', id: 'interes:D02', de: '900000000000001', canal: 'instagram' });
+  const a = await responder({ tipo: 'seleccion', id: 'interes:D02', de: '900000000000001', canal: 'instagram' });
+  const b = await responder({ tipo: 'seleccion', id: 'persona', de: '900000000000001', canal: 'instagram' });
   await new Promise((r) => setImmediate(r));
-  assert.deepStrictEqual(eventos, [
-    { tipo: 'interes', producto: 'Figura Heroe Azul', cliente: '900000000000001', canal: 'instagram' }
-  ]);
+  assert.match(a.cuerpo, /Quedó registrado/);
+  assert.match(b.cuerpo, /Listo/);
+  assert.deepStrictEqual(eventos, []);
   alAvisar(async () => {});
 });
 
@@ -254,4 +255,21 @@ test('"tarjetas" de coleccion no se confunden con pago con tarjeta', async () =>
   assert.doesNotMatch((await texto('tienen tarjetas de pokemon')).cuerpo, /Mercado Pago/);
   assert.match((await texto('puedo pagar con tarjeta?')).cuerpo, /Mercado Pago/);
   assert.match((await texto('aceptan tarjeta de credito')).cuerpo, /Mercado Pago/);
+});
+
+// Solo WhatsApp: ahi el dueno no ve la conversacion. En Instagram server.js ni siquiera llama al bot con adjuntos
+// (el dueno los ve en la app), ver el e2e de server.
+test('en WhatsApp, foto o audio avisan al dueno con lo que mando', async () => {
+  const { alAvisar } = require('../bot');
+  const eventos = [];
+  alAvisar(async (e) => { eventos.push(e); });
+  const m = await responder({ tipo: 'otro', adjunto: 'audio', de: '5216620000008' });
+  await responder({ tipo: 'otro', de: '5216620000009' });
+  await new Promise((r) => setImmediate(r));
+  assert.match(m.cuerpo, /aviso al equipo/);
+  assert.deepStrictEqual(eventos, [
+    { tipo: 'adjunto', producto: 'audio', cliente: '5216620000008' },
+    { tipo: 'adjunto', producto: 'mensaje no compatible', cliente: '5216620000009' }
+  ]);
+  alAvisar(async () => {});
 });

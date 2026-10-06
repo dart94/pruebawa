@@ -64,3 +64,12 @@ test('los ids se comparan como texto', () => {
   p.pausar(123);
   assert.strictEqual(p.estaPausado('123'), true);
 });
+
+test('reanudar levanta la pausa de ese cliente', () => {
+  const p = crearPausa({ duracionMs: 3600000 });
+  p.pausar('c1');
+  p.pausar('c2');
+  p.reanudar('c1');
+  assert.strictEqual(p.estaPausado('c1'), false);
+  assert.strictEqual(p.estaPausado('c2'), true);
+});
