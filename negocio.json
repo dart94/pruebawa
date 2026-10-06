@@ -1,6 +1,8 @@
 {
   "nombre": "ToyLoco",
   "moneda": "MXN",
+  "apartado_porcentaje": 50,
+  "sin_apartado": [],
 
   "categorias": {
     "figura": "Figuras",
@@ -23,7 +25,8 @@
     "buscar_otro": "Buscar otro",
     "persona": "Hablar con alguien",
     "menu": "Volver al menú",
-    "me_interesa": "Me interesa"
+    "me_interesa": "Me interesa",
+    "si_ese": "Sí, ese"
   },
 
   "listas": {
@@ -48,7 +51,8 @@
     "parecidos": "No encontré justo eso, pero mira lo más parecido 👀",
     "sin_resultados": "No encontré \"{consulta}\" ahorita 😕 Prueba con otro nombre o pregunta directo al equipo.",
     "ficha_pie": "Sujeto a confirmación antes de apartarlo.",
-    "interes": "¡Anotado! 🙌 Quedó registrado tu interés en *{producto}*.",
+    "interes": "¡Anotado! 🙌 Quedó registrado tu interés en *{producto}*.\n\nPara apartarlo: anticipo del {porcentaje}% (${anticipo} {moneda}), la pieza se guarda 14 días y se paga por transferencia, depósito o Mercado Pago. El equipo te confirma y te pasa los datos de pago.",
+    "interes_sin_apartado": "¡Anotado! 🙌 Quedó registrado tu interés en *{producto}*.\n\nLas cartas sueltas no se apartan: se pagan completas (${precio} {moneda}) por transferencia, depósito o Mercado Pago. El equipo te confirma y te pasa los datos de pago.",
     "persona": "Listo, dejé tu solicitud para el equipo de {nombre} 🙌",
     "escribir": "Dime qué buscas ✍️ Por ejemplo: Gogeta, figuras de Naruto o sobres de Pokémon.",
     "sin_catalogo": "Uy, ahorita no puedo consultar el inventario 😅 Puedes dejar tu solicitud al equipo.",
@@ -62,7 +66,8 @@
     "pagos": "Aceptamos transferencia, depósito y Mercado Pago 💳",
     "apartado": "Apartamos con el 50% del precio 🙌 La pieza se guarda 14 días y, si ya no la quieres, se te reembolsa. El envío se paga aparte. Las cartas sueltas no se apartan: se pagan completas. Sujeto a confirmación del equipo.",
     "gracias": "¡Con gusto! 🙌 Aquí sigo por si quieres ver algo más.",
-    "compra_sin_producto": "¡Va! 🙌 ¿Cuál pieza te interesa? Dime el nombre o toca «Buscar producto» para verla."
+    "compra_sin_producto": "¡Va! 🙌 ¿Cuál pieza te interesa? Dime el nombre o toca «Buscar producto» para verla.",
+    "confirmar_producto": "¡Va! 🙌 ¿Te refieres a *{producto}*? 💰 ${precio} {moneda}"
   },
 
   "aviso_tipos": {

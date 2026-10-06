@@ -43,7 +43,7 @@ function paginaPrivacidad({ nombre, contacto }) {
 <p>No usamos tus datos para publicidad ni los vendemos.</p>
 
 <h2>Qué se conserva</h2>
-<p>El asistente no guarda un historial de tus conversaciones ni crea un perfil tuyo. Solo mantiene en memoria, por unos minutos, lo necesario para no repetir un mismo aviso al equipo. Los registros técnicos del servidor ocultan casi todo tu identificador y no incluyen el texto de tus mensajes.</p>
+<p>El asistente no guarda un historial de tus conversaciones, no guarda el texto de tus mensajes ni crea un perfil tuyo. Para atenderte mejor recuerda únicamente tu identificador de usuario y el último producto que viste, hasta 24 horas, y durante unas horas si el equipo de ${n} te está atendiendo, para no interrumpirlo. Pasado ese tiempo se borra automáticamente. Los registros técnicos del servidor ocultan casi todo tu identificador y no incluyen el texto de tus mensajes.</p>
 <p>Tu conversación sí queda en WhatsApp o Instagram, donde la conservan esas plataformas y el equipo de ${n} que la atiende, según sus propias políticas.</p>
 
 <h2>Con quién se comparte</h2>

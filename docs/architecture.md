@@ -52,7 +52,7 @@ Meta WhatsApp Cloud API ──webhook POST /webhook──▶ server.js (Railway)
 
 ## Configuración (variables de entorno)
 
-Ver `.env.example`. Obligatorias en producción: `VERIFY_TOKEN`, `WHATSAPP_TOKEN`, `PHONE_NUMBER_ID`, `APP_SECRET`, `NODE_ENV=production`, `CATALOGO_URL`. Opcionales: `DUENO_WHATSAPP`, `PLANTILLA_AVISO`, `PLANTILLA_IDIOMA`, `CATALOGO_TTL_SEG`, `NEGOCIO_ARCHIVO`, `DRY_RUN`, `LOG_CONTENIDO`.
+Ver `.env.example`. Obligatorias en producción: `VERIFY_TOKEN`, `WHATSAPP_TOKEN`, `PHONE_NUMBER_ID`, `APP_SECRET`, `NODE_ENV=production`, `CATALOGO_URL`. Opcionales: `ESTADO_DB` (archivo SQLite de la memoria del bot, en un volumen), `IG_PAUSA_HORAS`, `DUENO_WHATSAPP`, `PLANTILLA_AVISO`, `PLANTILLA_IDIOMA`, `CATALOGO_TTL_SEG`, `NEGOCIO_ARCHIVO`, `DRY_RUN`, `LOG_CONTENIDO`.
 
 ## Multi-negocio
 

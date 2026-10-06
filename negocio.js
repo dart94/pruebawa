@@ -9,13 +9,13 @@ const path = require('path');
 const TEXTOS = {
   saludo: [], pie_menu: [], pie_confirmacion: [], pregunta_categoria: [],
   categoria_encontrados: ['n', 'categoria'], busqueda_encontrados: ['n'], parecidos: [],
-  sin_resultados: ['consulta'], ficha_pie: [], interes: ['producto'], persona: [], escribir: [],
+  sin_resultados: ['consulta'], ficha_pie: [], interes: ['producto', 'anticipo', 'porcentaje', 'moneda'], persona: [], escribir: [],
   sin_catalogo: [], categoria_vacia: [], producto_no_disponible: [], no_es_texto: [], dato_pendiente: [],
-  gracias: [], compra_sin_producto: []
+  gracias: [], compra_sin_producto: [], confirmar_producto: ['producto', 'precio', 'moneda']
 };
 // Respuestas fijas a preguntas frecuentes. Opcionales: si un negocio no define una, el bot usa textos.dato_pendiente.
 const FAQ = ['horario', 'ubicacion', 'envios', 'pagos', 'apartado'];
-const BOTONES = { buscar: 20, buscar_otro: 20, persona: 20, menu: 20, me_interesa: 20 };   // maximo de caracteres (Meta)
+const BOTONES = { buscar: 20, buscar_otro: 20, persona: 20, menu: 20, me_interesa: 20, si_ese: 20 };   // maximo de caracteres (Meta)
 const LISTAS = {
   boton_categorias: ['', 20], seccion_categorias: ['', 24], boton_productos: ['', 20], seccion_productos: ['', 24],
   disponible_uno: ['n', 72], disponible_varios: ['n', 72], escribir_titulo: ['', 24],
@@ -51,6 +51,14 @@ function validar(cfg) {
   for (const [k, [vars, max]] of Object.entries(LISTAS)) texto(`listas.${k}`, (cfg.listas || {})[k], vars ? [vars] : [], max);
   for (const [k, vars] of Object.entries(TEXTOS)) {
     texto(`textos.${k}`, (cfg.textos || {})[k], vars, k.startsWith('pie_') ? 60 : 1024);
+  }
+  const pct = cfg.apartado_porcentaje;
+  if (pct !== undefined && !(Number(pct) > 0 && Number(pct) <= 100)) errores.push('apartado_porcentaje: debe ser un numero entre 1 y 100');
+  if (cfg.sin_apartado !== undefined && (!Array.isArray(cfg.sin_apartado) || cfg.sin_apartado.some((c) => typeof c !== 'string'))) {
+    errores.push('sin_apartado: debe ser una lista de categorias (texto)');
+  }
+  if ((cfg.textos || {}).interes_sin_apartado !== undefined) {
+    texto('textos.interes_sin_apartado', cfg.textos.interes_sin_apartado, ['producto', 'precio', 'moneda'], 1024);
   }
   for (const k of FAQ) if ((cfg.textos || {})[k] !== undefined) texto(`textos.${k}`, cfg.textos[k], [], 1024);
   if ((cfg.aviso_tipos || {}).adjunto !== undefined) texto('aviso_tipos.adjunto', cfg.aviso_tipos.adjunto, [], 60);

@@ -12,6 +12,7 @@ const { avisarDueno } = require('./notificar');
 const { texto, payload, textoPlano } = require('./mensajes');
 const { mensajeIG, mensajeIGPlano, eventosDeWebhook, resumenWebhook } = require('./instagram');
 const { crearPausa } = require('./pausa');
+const { almacen } = require('./estado');
 const { paginaPrivacidad } = require('./privacidad');
 const { negocio } = require('./negocio');
 
@@ -47,7 +48,7 @@ const IG_APP_SECRET  = process.env.IG_APP_SECRET || '';   // solo si la app de I
 const IG_PERMITIDOS  = (process.env.IG_PERMITIDOS || '').split(',').map((s) => s.trim()).filter(Boolean);
 // Horas que el bot se calla con un cliente de Instagram despues de que el dueno le contesta a mano. 0 = sin pausa.
 const IG_PAUSA_HORAS = Number.isFinite(Number(process.env.IG_PAUSA_HORAS)) && process.env.IG_PAUSA_HORAS !== '' ? Number(process.env.IG_PAUSA_HORAS) : 3;
-const pausaIG        = crearPausa({ duracionMs: IG_PAUSA_HORAS * 3600000 });
+const pausaIG        = crearPausa({ duracionMs: IG_PAUSA_HORAS * 3600000, almacen: almacen() });
 const VERSION        = process.env.API_VERSION || 'v26.0';
 const API            = `https://graph.facebook.com/${VERSION}`;
 // Con un token de Instagram Business Login el envio va por graph.instagram.com (ej. https://graph.instagram.com/v26.0).

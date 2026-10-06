@@ -148,9 +148,11 @@ const IGNORAR = new Set([
   // relleno de conversacion e intencion de compra: no son parte del nombre de un producto
   'lo', 'le', 'les', 'se', 'te', 'nos', 'al', 'es', 'ya', 'muy', 'mas', 'pues', 'porfa', 'porfavor',
   'como', 'estas', 'tal', 'ok', 'okey', 'oki', 'okay', 'vale', 'listo', 'perfecto', 'excelente', 'genial',
-  'gracias', 'sip', 'apartar', 'aparto', 'apartas', 'aparta', 'apartalo', 'apartame', 'separar', 'separo',
+  'gracias', 'sip', 'sale', 'costo', 'costos', 'ese', 'esa', 'mero', 'mismo', 'misma', 'apartar', 'aparto', 'apartas', 'aparta', 'apartalo', 'apartame', 'separar', 'separo',
   'comprar', 'compro', 'llevo', 'llevar', 'pido', 'pedir', 'interesa', 'interesan'
 ]);
+// "apartarlo", "llevarla", "comprame"...: verbos de compra con el pronombre pegado, tampoco son parte del nombre
+const INTENCION_COMPRA = /^((apart|separ|compr|llev)\w*|si+)$/;   // incluye "sii", "siii"
 const GENERICOS = new Set(['figura', 'sobre', 'tcg', 'accesorio', 'carta']);
 
 const singular = (t) => (t.length > 3 && t.endsWith('s') ? t.slice(0, -1) : t);   // plural simple
@@ -158,7 +160,7 @@ const singular = (t) => (t.length > 3 && t.endsWith('s') ? t.slice(0, -1) : t); 
 function tokens(texto) {
   return normalizar(texto)
     .split(/[^a-z0-9]+/)
-    .filter((t) => t.length > 1 && !IGNORAR.has(t))
+    .filter((t) => t.length > 1 && !IGNORAR.has(t) && !INTENCION_COMPRA.test(t))
     .map(singular);
 }
 

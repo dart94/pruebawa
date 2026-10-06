@@ -5,6 +5,7 @@
 
 const { obtenerCatalogo, buscar, normalizar, tokens } = require('./catalogo');
 const { texto, botones, lista } = require('./mensajes');
+const { recordarProducto, productoReciente } = require('./estado');
 const { negocio, fmt } = require('./negocio');
 
 const T = negocio.textos;
@@ -105,11 +106,14 @@ async function categorias(productos) {
 
 // ---------- busqueda ----------
 
-async function resultadosDeBusqueda(consulta, productos) {
-  const limpia = String(consulta || '').trim().slice(0, 200);
+async function resultadosDeBusqueda(entrada, productos) {
+  const limpia = String(entrada.texto || '').trim().slice(0, 200);
   const { exactos, parecidos } = buscar(productos, limpia);
   console.log(`[consulta] resultados: ${exactos.length} exactos, ${parecidos.length} parecidos`);
-  if (exactos.length === 1) return detalle(exactos[0]);
+  if (exactos.length === 1) {
+    recordarProducto(entrada, exactos[0]);   // para que "lo quiero" o "cuanto cuesta" sepan de que hablan
+    return detalle(exactos[0]);
+  }
   if (exactos.length) return listaProductos(fmt(T.busqueda_encontrados, { n: exactos.length }), exactos);
   if (parecidos.length) return listaProductos(T.parecidos, parecidos);
   return botones(fmt(T.sin_resultados, { consulta: limpia }), [BTN.buscarOtro, BTN.persona]);
@@ -123,8 +127,11 @@ const SALUDO_INICIAL = /^(?:(?:hola+|holi+|buenas|buenos dias|buenas tardes|buen
 // Mensajes de cierre ("ok gracias"): no son una busqueda
 const CIERRE = new Set(['ok', 'okey', 'oki', 'okay', 'vale', 'listo', 'perfecto', 'excelente', 'genial', 'gracias', 'muchas',
   'mil', 'de', 'nada', 'sip', 'claro', 'adios', 'bye', 'hasta', 'luego', 'saludos']);
-// El cliente quiere comprar o apartar (el bot aun no recuerda de que producto hablaban)
-const COMPRA = /\b(quiero|apart\w*|compr\w*|llevo|llevar|separ\w*|pido|pedir|interesa\w*)\b/;
+// El cliente quiere comprar o apartar
+const PRECIO = /\b(cuanto|precios?|cuesta|cuestan|costo|sale|vale)\b/;
+// "si" o "ese" como respuesta a "te refieres a ...?"
+const AFIRMA = /^(si+|sip|ese|esa|ese mero|el mismo|ese mismo|esa misma)$/;
+const COMPRA = /\b(quiero|apart\w*|compr\w*|llev\w*|separ\w*|pido|pedir|interesa\w*)\b/;
 // Preguntas frecuentes con respuesta fija en negocio.json (textos.<clave>); si el negocio no la define, se usa dato_pendiente.
 // Van en este orden y tienen prioridad sobre la busqueda de productos.
 const FAQ = [
@@ -134,6 +141,17 @@ const FAQ = [
   ['horario', /\b(horarios?|abren|cierran|abiertos?|atienden|a que hora)\b/],
   ['ubicacion', /\b(ubicacion|direccion|donde estan|donde queda|donde se ubican|tienda fisica|sucursal|local fisico)\b/]
 ];
+
+// Texto de "Me interesa". El bot NO aparta nada: explica como apartar (el dueno cierra a mano) o, si la categoria no se
+// aparta (negocio.sin_apartado, p. ej. cartas sueltas), que se paga completa.
+function textoInteres(p) {
+  const vars = { producto: nombreLimpio(p), moneda: negocio.moneda };
+  const sinApartado = (negocio.sin_apartado || []).map(normalizar).includes(normalizar(p.categoria));
+  if (sinApartado && T.interes_sin_apartado) return fmt(T.interes_sin_apartado, { ...vars, precio: p.precio });
+  const pct = Number(negocio.apartado_porcentaje) || 0;
+  const anticipo = pct ? (p.precio * pct) / 100 : '';
+  return fmt(T.interes, { ...vars, porcentaje: pct || '', anticipo: Number.isInteger(anticipo) || anticipo === '' ? anticipo : anticipo.toFixed(2) });
+}
 
 async function responder(entrada) {
   if (entrada.tipo === 'otro') {   // foto, audio, publicacion...: el bot no lo entiende, asi que se avisa al dueno
@@ -170,10 +188,12 @@ async function responder(entrada) {
       const p = productos.find((x) => x.id === pid);
       if (!p) return botones(T.producto_no_disponible, [BTN.buscarOtro, BTN.persona]);
       if (id.startsWith('interes:')) {
+        recordarProducto(entrada, p);
         console.log(`[interes] producto ${p.id}`);
         aviso({ tipo: 'interes', producto: nombreLimpio(p), cliente: entrada.de, ...canalDe(entrada) });
-        return botones(fmt(T.interes, { producto: nombreLimpio(p) }), [BTN.menu]);
+        return botones(textoInteres(p), [BTN.menu]);
       }
+      recordarProducto(entrada, p);
       return detalle(p);
     }
     return menu();   // id desconocido (por ejemplo, un boton de un mensaje viejo)
@@ -196,11 +216,22 @@ async function responder(entrada) {
     return botones(T[faq[0]] || T.dato_pendiente, [BTN.persona, BTN.buscar]);
   }
   if (!tokens(entrada.texto).length) {   // nada que buscar: "sí lo quiero", "cuanto cuesta"...
+    // Si venian viendo un producto (hasta 24 h), se entiende de cual hablan
+    const reciente = productoReciente(entrada);
+    if (reciente && (COMPRA.test(t) || PRECIO.test(t) || AFIRMA.test(palabras.join(' ')))) {
+      const productos = await obtenerCatalogo();   // precio y stock se leen de nuevo, no se recuerdan
+      const p = productos && productos.find((x) => x.id === reciente.id);
+      if (p && PRECIO.test(t)) return detalle(p);
+      if (p) {
+        return botones(fmt(T.confirmar_producto, { producto: nombreLimpio(p), precio: p.precio, moneda: negocio.moneda }),
+          [{ id: `interes:${p.id}`, titulo: negocio.botones.si_ese }, BTN.buscarOtro]);
+      }
+    }
     return botones(COMPRA.test(t) ? T.compra_sin_producto : T.escribir, [BTN.buscar, BTN.persona]);
   }
   const productos = await obtenerCatalogo();
   if (!productos) return sinCatalogo();
-  return resultadosDeBusqueda(entrada.texto, productos);   // cualquier otro texto se toma como busqueda
+  return resultadosDeBusqueda(entrada, productos);   // cualquier otro texto se toma como busqueda
 }
 
 module.exports = { responder, nombreLimpio, alAvisar };

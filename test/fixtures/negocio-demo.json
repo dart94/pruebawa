@@ -19,7 +19,8 @@
     "buscar_otro": "Buscar otro",
     "persona": "Hablar con alguien",
     "menu": "Volver al menú",
-    "me_interesa": "Me interesa"
+    "me_interesa": "Me interesa",
+    "si_ese": "Sí, ese"
   },
   "listas": {
     "boton_categorias": "Ver categorías",
@@ -51,7 +52,8 @@
     "no_es_texto": "Recibí tu mensaje, pero no puedo ver imágenes ni audios 😅 Cuéntame en texto qué buscas o toca una opción.",
     "dato_pendiente": "Ese dato todavía no lo tengo a la mano 😅 Puedes dejar tu pregunta al equipo.",
     "gracias": "¡Con gusto! Aquí sigo por si quieres ver algo más.",
-    "compra_sin_producto": "¿Cuál pieza te interesa? Dime el nombre o toca «Buscar producto»."
+    "compra_sin_producto": "¿Cuál pieza te interesa? Dime el nombre o toca «Buscar producto».",
+    "confirmar_producto": "¿Te refieres a *{producto}*? ${precio} {moneda}"
   },
   "aviso_tipos": {
     "persona": "Hablar con alguien",

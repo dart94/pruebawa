@@ -9,6 +9,9 @@
     "test": "node --test test/"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.11.1"
   }
 }

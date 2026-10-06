@@ -3,14 +3,17 @@
 //   - es del bot si su id (mid) coincide con uno que el bot envio, o
 //   - si el bot le escribio a ese cliente hace menos de ventanaBotMs (cubre el eco que llega antes de registrar el envio
 //     y el caso de que el mid del eco no coincida con el de la respuesta de envio).
-// Todo vive en memoria: al reiniciar el servidor las pausas se pierden.
+// Las pausas viven en el almacen (SQLite si hay ESTADO_DB, ver estado.js) y sobreviven a un reinicio; la identificacion
+// de ecos del bot es de segundos y se queda en memoria.
 
-function crearPausa({ duracionMs, ventanaBotMs = 10000, ahora = Date.now, max = 5000 }) {
+const { crearAlmacen } = require('./estado');
+
+function crearPausa({ duracionMs, ventanaBotMs = 10000, ahora = Date.now, max = 5000, almacen = crearAlmacen({ ahora }) }) {
   const midsBot = new Set();
   const ultimoEnvio = new Map();   // cliente -> momento del ultimo envio del bot
-  const pausadoHasta = new Map();  // cliente -> momento en que termina la pausa
 
   const recortar = (mapa) => { if (mapa.size > max) mapa.delete(mapa.keys().next().value); };
+  const clave = (cliente) => `pausa:${cliente}`;
 
   return {
     activa: duracionMs > 0,
@@ -34,20 +37,16 @@ function crearPausa({ duracionMs, ventanaBotMs = 10000, ahora = Date.now, max = 
     // El dueno escribio: pausa (o extiende la pausa) con ese cliente
     pausar(cliente) {
       if (!(duracionMs > 0)) return;
-      pausadoHasta.set(String(cliente), ahora() + duracionMs);
-      recortar(pausadoHasta);
+      almacen.guardar(clave(cliente), true, duracionMs);
     },
 
     // El cliente volvio al bot a proposito (toco "Volver al menu"): se levanta la pausa
     reanudar(cliente) {
-      pausadoHasta.delete(String(cliente));
+      almacen.borrar(clave(cliente));
     },
 
     estaPausado(cliente) {
-      const hasta = pausadoHasta.get(String(cliente));
-      if (hasta === undefined) return false;
-      if (ahora() >= hasta) { pausadoHasta.delete(String(cliente)); return false; }
-      return true;
+      return almacen.obtener(clave(cliente)) === true;
     }
   };
 }
